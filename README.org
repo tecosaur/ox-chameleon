@@ -1,0 +1,12 @@
+#+title: Org Chameleon Export
+#+author: tecosaur
+
+Sometimes you want your exports to blend in with your Emacs theme.
+
+[[file:logo.svg]]
+
+This currently only works with LaTeX exports, but it would be nice if more
+formats could be supported in future. To use with LaTeX just change the
+documents =#+latex_class= to use the pseudo-class =chameleon= and
+~org-latex-default-class~ will be used with some extra generated preamble content
+to make the result similar to your buffer 🙂.
