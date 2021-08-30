@@ -39,9 +39,16 @@
     (funcall orig-fn info template snippet?)))
 (advice-add 'org-latex-make-preamble :around #'ox-chameleon-org-latex-export)
 
-(defun ox-chameleon-engrave-wrapper (orig-fun &rest args)
-  (let ((engrave-faces-preset-styles (engrave-faces-generate-preset)))
-    (apply orig-fun args)))
+(defun ox-chameleon-engrave-wrapper (orig-fun backend &rest args)
+  (if (and ox-chameleon--p (org-export-derived-backend-p backend 'latex))
+      ;; For some reason a `let' block doesn't seem to work here.
+      (unwind-protect
+          (progn (setq ox-chameleon--ef-styles--old engrave-faces-preset-styles
+                       engrave-faces-preset-styles (engrave-faces-generate-preset))
+                 (apply orig-fun backend args))
+        (setq engrave-faces-preset-styles ox-chameleon--ef-styles--old)
+        (makunbound 'ox-chameleon--ef-styles--old))
+    (apply orig-fun backend args)))
 (advice-add 'org-export-as :around #'ox-chameleon-engrave-wrapper)
 
 (defun ox-chameleon-generate-colourings (info)
