@@ -102,7 +102,7 @@
          (mapcar (lambda (hex) (substring hex 1))
                  (list
                   (face-attribute 'link :foreground)
-                  (face-attribute 'org-cite :foreground)
+                  (face-attribute 'org-cite :foreground nil 'default)
                   (face-attribute 'org-list-dt :foreground)
                   (face-attribute 'org-code :foreground)
                   (face-attribute 'org-verbatim :foreground)))))
