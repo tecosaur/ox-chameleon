@@ -135,11 +135,24 @@
 \\definecolor{codeborder}{HTML}{%s}
 "
          (mapcar (lambda (hex) (substring hex 1))
-                 (list
-                  (face-attribute 'solaire-default-face :background)
-                  (doom-blend (face-attribute 'solaire-default-face :background)
-                              (face-attribute 'default :foreground)
-                              0.95)))))
+                 (cond
+                  ((and (featurep 'doom-themes) (featurep 'solaire-mode))
+                   (list
+                    (face-attribute 'solaire-default-face :background)
+                    (doom-blend (face-attribute 'solaire-default-face :background)
+                                (face-attribute 'default :foreground)
+                                0.95)))
+                  ((featurep 'doom-themes)
+                   (list
+                    (doom-blend (face-attribute 'default :background)
+                                (face-attribute 'default :foreground)
+                                0.98)
+                    (doom-blend (face-attribute 'default :background)
+                                (face-attribute 'default :foreground)
+                                0.95)))
+                  (t (list
+                      (face-attribute 'default :background)
+                      (face-attribute 'shadow :foreground)))))))
 
 (defun ox-chameleon--generate-koma-structural-colourings ()
   (apply #'format
