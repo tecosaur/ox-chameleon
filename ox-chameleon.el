@@ -101,11 +101,11 @@
 "
          (mapcar (lambda (hex) (substring hex 1))
                  (list
-                  (face-attribute 'link :foreground)
+                  (face-attribute 'link :foreground nil 'default)
                   (face-attribute 'org-cite :foreground nil 'default)
-                  (face-attribute 'org-list-dt :foreground)
-                  (face-attribute 'org-code :foreground)
-                  (face-attribute 'org-verbatim :foreground)))))
+                  (face-attribute 'org-list-dt :foreground nil 'default)
+                  (face-attribute 'org-code :foreground nil 'default)
+                  (face-attribute 'org-verbatim :foreground nil 'default)))))
 
 (defun ox-chameleon--generate-list-colourings ()
   (format "
@@ -123,7 +123,7 @@
 \\renewcommand{\\labelenumiii}{\\textcolor{itemlabel}{\\theenumiii.}}
 \\renewcommand{\\labelenumiv}{\\textcolor{itemlabel}{\\theenumiv.}}
 "
-          (substring (face-attribute 'org-list-dt :foreground) 1)))
+          (substring (face-attribute 'org-list-dt :foreground nil 'default) 1)))
 
 (defun ox-chameleon--generate-src-colourings ()
   (apply #'format
@@ -138,21 +138,21 @@
                  (cond
                   ((and (featurep 'doom-themes) (featurep 'solaire-mode))
                    (list
-                    (face-attribute 'solaire-default-face :background)
-                    (doom-blend (face-attribute 'solaire-default-face :background)
-                                (face-attribute 'default :foreground)
+                    (face-attribute 'solaire-default-face :background nil 'default)
+                    (doom-blend (face-attribute 'solaire-default-face :background nil 'default)
+                                (face-attribute 'default :foreground nil 'default)
                                 0.95)))
                   ((featurep 'doom-themes)
                    (list
-                    (doom-blend (face-attribute 'default :background)
-                                (face-attribute 'default :foreground)
+                    (doom-blend (face-attribute 'default :background nil 'default)
+                                (face-attribute 'default :foreground nil 'default)
                                 0.98)
-                    (doom-blend (face-attribute 'default :background)
-                                (face-attribute 'default :foreground)
+                    (doom-blend (face-attribute 'default :background nil 'default)
+                                (face-attribute 'default :foreground nil 'default)
                                 0.95)))
                   (t (list
-                      (face-attribute 'default :background)
-                      (face-attribute 'shadow :foreground)))))))
+                      (face-attribute 'default :background nil 'default)
+                      (face-attribute 'shadow :foreground nil 'default)))))))
 
 (defun ox-chameleon--generate-koma-structural-colourings ()
   (apply #'format
@@ -186,16 +186,16 @@
 "
          (mapcar (lambda (hex) (substring hex 1))
                  (list
-                  (face-attribute 'org-document-title :foreground)
-                  (face-attribute 'org-document-info :foreground)
-                  (face-attribute 'outline-1 :foreground)
-                  (face-attribute 'outline-2 :foreground)
-                  (face-attribute 'outline-3 :foreground)
-                  (face-attribute 'outline-4 :foreground)
-                  (face-attribute 'outline-5 :foreground)
-                  (face-attribute 'outline-6 :foreground)
-                  (face-attribute 'outline-7 :foreground)
-                  (face-attribute 'outline-8 :foreground)))))
+                  (face-attribute 'org-document-title :foreground nil 'default)
+                  (face-attribute 'org-document-info :foreground nil 'default)
+                  (face-attribute 'outline-1 :foreground nil 'default)
+                  (face-attribute 'outline-2 :foreground nil 'default)
+                  (face-attribute 'outline-3 :foreground nil 'default)
+                  (face-attribute 'outline-4 :foreground nil 'default)
+                  (face-attribute 'outline-5 :foreground nil 'default)
+                  (face-attribute 'outline-6 :foreground nil 'default)
+                  (face-attribute 'outline-7 :foreground nil 'default)
+                  (face-attribute 'outline-8 :foreground nil 'default)))))
 
 (defun ox-chameleon--generate-beamer-colourings ()
   (format
@@ -213,7 +213,7 @@
   \\setbeamercolor{progress bar in head/foot}{fg=builtin}
   \\setbeamercolor{progress bar in section page}{fg=builtin}}
 "
-   (substring (face-attribute 'font-lock-builtin-face :foreground) 1)))
+   (substring (face-attribute 'font-lock-builtin-face :foreground nil 'default) 1)))
 
 (defun ox-chameleon--generate-beamer-list-colourings ()
   (format "
@@ -222,7 +222,7 @@
 \\definecolor{itemlabel}{HTML}{%s}
 \\setbeamercolor*{item}{fg=itemlabel}
 "
-          (substring (face-attribute 'org-list-dt :foreground) 1)))
+          (substring (face-attribute 'org-list-dt :foreground nil 'default) 1)))
 
 (provide 'ox-chameleon)
 ;;; ox-chameleon.el ends here
