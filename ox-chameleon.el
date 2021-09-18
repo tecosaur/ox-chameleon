@@ -40,6 +40,10 @@
 (advice-add 'org-latex-make-preamble :around #'ox-chameleon-org-latex-export)
 
 (defun ox-chameleon-engrave-wrapper (orig-fun backend &rest args)
+  ;; Require modes that provide faces used in `engrave-faces-generate-preset'.
+  (require 'highlight-numbers nil t)
+  (require 'highlight-quoted nil t)
+  (require 'rainbow-delimiters nil t)
   (if (and ox-chameleon--p (org-export-derived-backend-p backend 'latex))
       ;; For some reason a `let' block doesn't seem to work here.
       (unwind-protect
