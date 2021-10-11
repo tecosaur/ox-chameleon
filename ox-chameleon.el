@@ -69,13 +69,21 @@
    (ox-chameleon--generate-src-colourings)
    "\n%% end customisations\n\n"))
 
+(defun ox-chameleon--hex-to-srgb (hex)
+  (mapcar (lambda (range) (/ (string-to-number (apply #'substring hex range) 16) 255.0))
+          '((1 3) (3 5) (5 7))))
+
 (defun ox-chameleon--generate-fgbg-colours ()
   (apply #'format
          "\n\\definecolor{obg}{HTML}{%s}\n\\definecolor{ofg}{HTML}{%s}\n"
          (mapcar (lambda (hex) (substring hex 1))
-                 (list
-                  (face-attribute 'default :background)
-                  (face-attribute 'default :foreground)))))
+                 (let ((bg (face-attribute 'default :background))
+                       (fg (face-attribute 'default :foreground)))
+                   (cl-destructuring-bind ((hb sb lb) (hf sf lf))
+                       (list (apply #'color-rgb-to-hsl (ox-chameleon--hex-to-srgb bg))
+                             (apply #'color-rgb-to-hsl (ox-chameleon--hex-to-srgb fg)))
+                     (list (if (and (> lb 0.95) (< (* sb (- 1 lb)) 0.01)) "#ffffff" bg)
+                           (if (and (< lf 0.4) (< (* sf lf) 0.1)) "#000000" fg)))))))
 
 (defun ox-chameleon--generate-text-colourings ()
   (apply #'format
