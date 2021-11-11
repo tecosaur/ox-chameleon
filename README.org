@@ -1,6 +1,9 @@
 #+title: Org Chameleon Export
 #+author: tecosaur
 
+#+html: <p><img src="https://img.shields.io/badge/Emacs-26.3+-blueviolet.svg?style=flat-square&logo=GNU%20Emacs&logoColor=white">
+#+html: <img src="https://img.shields.io/badge/stage-%CE%B1,%20experimental-red?style=flat-square"></p>
+
 Sometimes you want your exports to blend in with your Emacs theme.
 
 [[file:logo.svg]]
