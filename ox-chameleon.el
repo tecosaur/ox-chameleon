@@ -19,6 +19,9 @@
 ;;
 ;;; Code:
 
+(defvar ox-chameleon-snap-fgbg-to-bw nil
+  "When non-nil, snap bg/fg colours to black/white when they're close.")
+
 (defvar ox-chameleon--p nil
   "Used to indicate whether the current export is trying to blend in. Set just before being accessed.")
 
@@ -58,7 +61,8 @@
 (defun ox-chameleon-generate-colourings (info)
   (concat
    "\n%% make document follow Emacs theme\n"
-   (ox-chameleon--generate-fgbg-colours)
+   (apply #'format "\n\\definecolor{obg}{HTML}{%s}\n\\definecolor{ofg}{HTML}{%s}\n"
+          (ox-chameleon--generate-fgbg-colours))
    (if (plist-get info :beamer-theme)
        (concat (ox-chameleon--generate-beamer-colourings)
                (ox-chameleon--generate-beamer-list-colourings))
@@ -74,16 +78,16 @@
           '((1 3) (3 5) (5 7))))
 
 (defun ox-chameleon--generate-fgbg-colours ()
-  (apply #'format
-         "\n\\definecolor{obg}{HTML}{%s}\n\\definecolor{ofg}{HTML}{%s}\n"
-         (mapcar (lambda (hex) (substring hex 1))
-                 (let ((bg (face-attribute 'default :background))
-                       (fg (face-attribute 'default :foreground)))
-                   (cl-destructuring-bind ((hb sb lb) (hf sf lf))
-                       (list (apply #'color-rgb-to-hsl (ox-chameleon--hex-to-srgb bg))
-                             (apply #'color-rgb-to-hsl (ox-chameleon--hex-to-srgb fg)))
-                     (list (if (and (> lb 0.95) (< (* sb (- 1 lb)) 0.01)) "#ffffff" bg)
-                           (if (and (< lf 0.4) (< (* sf lf) 0.1)) "#000000" fg)))))))
+  (mapcar (lambda (hex) (substring hex 1))
+          (let ((bg (face-attribute 'default :background))
+                (fg (face-attribute 'default :foreground)))
+            (if ox-chameleon-snap-fgbg-to-bw
+                (list bg fg)
+              (cl-destructuring-bind ((hb sb lb) (hf sf lf))
+                  (list (apply #'color-rgb-to-hsl (ox-chameleon--hex-to-srgb bg))
+                        (apply #'color-rgb-to-hsl (ox-chameleon--hex-to-srgb fg)))
+                (list (if (and (> lb 0.95) (< (* sb (- 1 lb)) 0.01)) "#ffffff" bg)
+                      (if (and (< lf 0.4) (< (* sf lf) 0.1)) "#000000" fg)))))))
 
 (defun ox-chameleon--generate-text-colourings ()
   (apply #'format
