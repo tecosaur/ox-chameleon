@@ -111,8 +111,12 @@
 \\renewcommand{\\labelenumiv}{\\textcolor{itemlabel}{\\theenumiv.}}
 
 \\DeclareTextFontCommand{\\texttt}{\\color{code}\\ttfamily}
+
+\\let\\oldverb\\verb
+\\def\\verb{\\bgroup\\color{verbatim}\\oldverb}
 \\makeatletter
-\\def\\verbatim@font{\\color{verbatim}\\normalfont\\ttfamily}
+\\let\\verb@oldegroup\\verb@egroup
+\\def\\verb@egroup{\\verb@oldegroup\\egroup}
 \\makeatother
 "
          (mapcar (lambda (hex) (substring hex 1))
