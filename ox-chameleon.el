@@ -64,7 +64,9 @@
    (apply #'format "\n\\definecolor{obg}{HTML}{%s}\n\\definecolor{ofg}{HTML}{%s}\n"
           (ox-chameleon--generate-fgbg-colours))
    (if (plist-get info :beamer-theme)
-       (concat (ox-chameleon--generate-beamer-colourings)
+       (concat (if (string-match-p "default$" org-beamer-theme)
+                   (ox-chameleon--generate-beamer-colourings)
+                 (ox-chameleon--generate-beamer-themed-colourings))
                (ox-chameleon--generate-beamer-list-colourings))
      (concat "\n\\pagecolor{obg}\n\\color{ofg}\n"
              (ox-chameleon--generate-koma-structural-colourings)))
@@ -206,7 +208,7 @@
                   (face-attribute 'outline-8 :foreground nil 'default)
                   (substring (face-attribute 'org-list-dt :foreground nil 'default) 1)))))
 
-(defun ox-chameleon--generate-beamer-colourings ()
+(defun ox-chameleon--generate-beamer-themed-colourings ()
   (format
    "
 %% beamer
@@ -227,6 +229,25 @@
 \\pretocmd{\\beamer@section}{\\begingroup\\hypersetup{hidelinks}}
 \\apptocmd{\\beamer@section}{\\endgroup}
 \\makeatother
+"
+   (substring (face-attribute 'font-lock-builtin-face :foreground nil 'default) 1)))
+
+(defun ox-chameleon--generate-beamer-colourings ()
+  (format
+   "
+%% beamer
+
+\\definecolor{builtin}{HTML}{%s}
+
+\\setbeamercolor{titlelike}{fg=ofg, bg=obg}
+\\setbeamercolor{block title}{fg=ofg, bg=obg}
+\\setbeamercolor{normal text}{fg=ofg, bg=obg}
+\\setbeamercolor{alerted text}{fg=builtin}
+\\setbeamercolor{navigation symbols}{fg=ofg!50!obg, bg=ofg!30!obg}
+\\setbeamercolor{progress bar}{fg=builtin}
+\\setbeamercolor{title separator}{fg=builtin}
+\\setbeamercolor{progress bar in head/foot}{fg=builtin}
+\\setbeamercolor{progress bar in section page}{fg=builtin}
 "
    (substring (face-attribute 'font-lock-builtin-face :foreground nil 'default) 1)))
 
