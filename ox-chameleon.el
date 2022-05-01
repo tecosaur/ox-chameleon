@@ -67,7 +67,6 @@
        (concat (ox-chameleon--generate-beamer-colourings)
                (ox-chameleon--generate-beamer-list-colourings))
      (concat "\n\\pagecolor{obg}\n\\color{ofg}\n"
-             (ox-chameleon--generate-list-colourings)
              (ox-chameleon--generate-koma-structural-colourings)))
    (ox-chameleon--generate-text-colourings)
    (ox-chameleon--generate-src-colourings)
@@ -103,16 +102,6 @@
 \\definecolor{code}{HTML}{%s}
 \\definecolor{verbatim}{HTML}{%s}
 
-\\renewcommand{\\labelitemi}{\\textcolor{itemlabel}{\\textbullet}}
-\\renewcommand{\\labelitemii}{\\textcolor{itemlabel}{\\normalfont\\bfseries \\textendash}}
-\\renewcommand{\\labelitemiii}{\\textcolor{itemlabel}{\\textasteriskcentered}}
-\\renewcommand{\\labelitemiv}{\\textcolor{itemlabel}{\\textperiodcentered}}
-
-\\renewcommand{\\labelenumi}{\\textcolor{itemlabel}{\\theenumi.}}
-\\renewcommand{\\labelenumii}{\\textcolor{itemlabel}{(\\theenumii)}}
-\\renewcommand{\\labelenumiii}{\\textcolor{itemlabel}{\\theenumiii.}}
-\\renewcommand{\\labelenumiv}{\\textcolor{itemlabel}{\\theenumiv.}}
-
 \\DeclareTextFontCommand{\\texttt}{\\color{code}\\ttfamily}
 
 \\let\\oldverb\\verb
@@ -129,24 +118,6 @@
                   (face-attribute 'org-list-dt :foreground nil 'default)
                   (face-attribute 'org-code :foreground nil 'default)
                   (face-attribute 'org-verbatim :foreground nil 'default)))))
-
-(defun ox-chameleon--generate-list-colourings ()
-  (format "
-%% list labels
-
-\\definecolor{itemlabel}{HTML}{%s}
-
-\\renewcommand{\\labelitemi}{\\textcolor{itemlabel}{\\textbullet}}
-\\renewcommand{\\labelitemii}{\\textcolor{itemlabel}{\\normalfont\\bfseries \\textendash}}
-\\renewcommand{\\labelitemiii}{\\textcolor{itemlabel}{\\textasteriskcentered}}
-\\renewcommand{\\labelitemiv}{\\textcolor{itemlabel}{\\textperiodcentered}}
-
-\\renewcommand{\\labelenumi}{\\textcolor{itemlabel}{\\theenumi.}}
-\\renewcommand{\\labelenumii}{\\textcolor{itemlabel}{(\\theenumii)}}
-\\renewcommand{\\labelenumiii}{\\textcolor{itemlabel}{\\theenumiii.}}
-\\renewcommand{\\labelenumiv}{\\textcolor{itemlabel}{\\theenumiv.}}
-"
-          (substring (face-attribute 'org-list-dt :foreground nil 'default) 1)))
 
 (defun ox-chameleon--generate-src-colourings ()
   (apply #'format
@@ -206,6 +177,20 @@
 \\newkomafont{paragraphprefix}{\\color{level4}}
 \\addtokomafont{subparagraph}{\\color{level5}}
 \\newkomafont{subparagraphprefix}{\\color{level5}}
+
+%% list labels
+
+\\definecolor{itemlabel}{HTML}{%s}
+
+\\renewcommand{\\labelitemi}{\\textcolor{itemlabel}{\\textbullet}}
+\\renewcommand{\\labelitemii}{\\textcolor{itemlabel}{\\normalfont\\bfseries \\textendash}}
+\\renewcommand{\\labelitemiii}{\\textcolor{itemlabel}{\\textasteriskcentered}}
+\\renewcommand{\\labelitemiv}{\\textcolor{itemlabel}{\\textperiodcentered}}
+
+\\renewcommand{\\labelenumi}{\\textcolor{itemlabel}{\\theenumi.}}
+\\renewcommand{\\labelenumii}{\\textcolor{itemlabel}{(\\theenumii)}}
+\\renewcommand{\\labelenumiii}{\\textcolor{itemlabel}{\\theenumiii.}}
+\\renewcommand{\\labelenumiv}{\\textcolor{itemlabel}{\\theenumiv.}}
 "
          (mapcar (lambda (hex) (substring hex 1))
                  (list
@@ -218,7 +203,8 @@
                   (face-attribute 'outline-5 :foreground nil 'default)
                   (face-attribute 'outline-6 :foreground nil 'default)
                   (face-attribute 'outline-7 :foreground nil 'default)
-                  (face-attribute 'outline-8 :foreground nil 'default)))))
+                  (face-attribute 'outline-8 :foreground nil 'default)
+                  (substring (face-attribute 'org-list-dt :foreground nil 'default) 1)))))
 
 (defun ox-chameleon--generate-beamer-colourings ()
   (format
