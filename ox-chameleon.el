@@ -235,6 +235,12 @@
   \\setbeamercolor{title separator}{fg=builtin}
   \\setbeamercolor{progress bar in head/foot}{fg=builtin}
   \\setbeamercolor{progress bar in section page}{fg=builtin}}
+
+\\usepackage{etoolbox}
+\\makeatletter
+\\pretocmd{\\beamer@section}{\\begingroup\\hypersetup{hidelinks}}
+\\apptocmd{\\beamer@section}{\\endgroup}
+\\makeatother
 "
    (substring (face-attribute 'font-lock-builtin-face :foreground nil 'default) 1)))
 
