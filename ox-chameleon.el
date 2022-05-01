@@ -77,17 +77,20 @@
   (mapcar (lambda (range) (/ (string-to-number (apply #'substring hex range) 16) 255.0))
           '((1 3) (3 5) (5 7))))
 
-(defun ox-chameleon--generate-fgbg-colours ()
-  (mapcar (lambda (hex) (substring hex 1))
-          (let ((bg (face-attribute 'default :background))
-                (fg (face-attribute 'default :foreground)))
-            (if ox-chameleon-snap-fgbg-to-bw
-                (list bg fg)
-              (cl-destructuring-bind ((hb sb lb) (hf sf lf))
-                  (list (apply #'color-rgb-to-hsl (ox-chameleon--hex-to-srgb bg))
-                        (apply #'color-rgb-to-hsl (ox-chameleon--hex-to-srgb fg)))
-                (list (if (and (> lb 0.95) (< (* sb (- 1 lb)) 0.01)) "#ffffff" bg)
-                      (if (and (< lf 0.4) (< (* sf lf) 0.1)) "#000000" fg)))))))
+(eval
+ ; Byte compiling seems to create a strange issue where the error
+ ; "Symbol’s value as variable is void: sf" is thrown.
+ '(defun ox-chameleon--generate-fgbg-colours ()
+    (mapcar (lambda (hex) (substring hex 1))
+            (let ((bg (face-attribute 'default :background))
+                  (fg (face-attribute 'default :foreground)))
+              (if ox-chameleon-snap-fgbg-to-bw
+                  (list bg fg)
+                (cl-destructuring-bind ((hb sb lb) (hf sf lf))
+                    (list (apply #'color-rgb-to-hsl (ox-chameleon--hex-to-srgb bg))
+                          (apply #'color-rgb-to-hsl (ox-chameleon--hex-to-srgb fg)))
+                  (list (if (and (> lb 0.95) (< (* sb (- 1 lb)) 0.01)) "#ffffff" bg)
+                        (if (and (< lf 0.4) (< (* sf lf) 0.1)) "#000000" fg))))))))
 
 (defun ox-chameleon--generate-text-colourings ()
   (apply #'format
