@@ -1,4 +1,4 @@
-;;; ox-chameleon.el --- Make documents match your theme -*- lexical-binding: t; -*-
+;;; ox-chameleon.el --- Make exports match your theme -*- lexical-binding: t; -*-
 ;;
 ;; Copyright (C) 2021 TEC
 ;;
@@ -15,12 +15,13 @@
 ;;
 ;;; Commentary:
 ;;
-;;  Make documents match your theme
+;;  Make exports match your theme
 ;;
 ;;; Code:
 
 (eval-when-compile
-  (require 'cl-lib))
+  (require 'cl-lib)
+  (require 'rx))
 
 (defvar ox-chameleon-snap-fgbg-to-bw nil
   "When non-nil, snap bg/fg colours to black/white when they're close.")
@@ -67,15 +68,13 @@
    (apply #'format "\n\\definecolor{obg}{HTML}{%s}\n\\definecolor{ofg}{HTML}{%s}\n"
           (ox-chameleon--generate-fgbg-colours))
    (ox-chameleon--generate-heading-colourings)
+   (ox-chameleon--generate-text-colourings)
    (if (plist-get info :beamer-theme)
-       (concat (ox-chameleon--generate-beamer-structural-colourings)
-               (if (string-match-p "default$" org-beamer-theme)
-                   (ox-chameleon--generate-beamer-colourings)
-                 (ox-chameleon--generate-beamer-themed-colourings))
-               (ox-chameleon--generate-beamer-list-colourings))
+       (if (string-match-p "default$" org-beamer-theme)
+           (ox-chameleon--generate-beamer-colourings)
+         (ox-chameleon--generate-beamer-themed-colourings))
      (concat "\n\\pagecolor{obg}\n\\color{ofg}\n"
              (ox-chameleon--generate-koma-structural-colourings)))
-   (ox-chameleon--generate-text-colourings)
    (ox-chameleon--generate-src-colourings)
    "\n%% end customisations\n\n"))
 
@@ -101,6 +100,7 @@
 %% textual elements
 
 \\definecolor{link}{HTML}{%s}
+\\colorlet{url}{link}
 \\definecolor{cite}{HTML}{%s}
 \\definecolor{itemlabel}{HTML}{%s}
 \\definecolor{code}{HTML}{%s}
@@ -183,11 +183,6 @@
 (defun ox-chameleon--generate-beamer-structural-colourings ()
   (format
          "
-%% structural elements
-
-\\setbeamercolor{section title}{fg=level1, bg=obg}
-\\setbeamercolor{frametitle}{fg=level2, bg=obg}
-\\setbeamercolor{title}{fg=level1, bg=obg}
 "))
 
 (defun ox-chameleon--generate-koma-structural-colourings ()
@@ -211,8 +206,6 @@
 
 %% list labels
 
-\\definecolor{itemlabel}{HTML}{%s}
-
 \\renewcommand{\\labelitemi}{\\textcolor{itemlabel}{\\textbullet}}
 \\renewcommand{\\labelitemii}{\\textcolor{itemlabel}{\\normalfont\\bfseries \\textendash}}
 \\renewcommand{\\labelitemiii}{\\textcolor{itemlabel}{\\textasteriskcentered}}
@@ -234,22 +227,33 @@
 
 \\NewCommandCopy{\\oldusetheme}{\\usetheme}
 \\renewcommand*{\\usetheme}[2][]{\\oldusetheme[#1]{#2}
-  \\setbeamercolor{normal text}{fg=ofg, bg=obg}
-  \\setbeamercolor{alerted text}{fg=builtin}
   \\setbeamercolor{progress bar}{fg=builtin}
   \\setbeamercolor{title separator}{fg=builtin}
   \\setbeamercolor{progress bar in head/foot}{fg=builtin}
   \\setbeamercolor{progress bar in section page}{fg=builtin}
-  \\setbeamercolor{block title}{fg=level3, bg=obg}
+
+  \\setbeamercolor{normal text}{fg=ofg, bg=obg}
+  \\setbeamercolor{alerted text}{fg=builtin}
+  \\setbeamercolor*{item}{fg=itemlabel}
+%s
 }
 
 \\usepackage{etoolbox}
 \\makeatletter
-\\pretocmd{\\beamer@section}{\\begingroup\\hypersetup{hidelinks}}
-\\apptocmd{\\beamer@section}{\\endgroup}
+\\patchcmd{\\beamer@section}{%%
+  \\edef\\insertsectionhead{\\noexpand\\hyperlink{Navigation\\the\\c@page}{\\unexpanded{#1}}}}{%%
+  \\edef\\insertsectionhead{\\begingroup\\noexpand\\hypersetup{hidelinks}\\noexpand\\hyperlink{Navigation\\the\\c@page}{\\unexpanded{#1}}\\endgroup}}
 \\makeatother
 "
-   (substring (face-attribute 'font-lock-builtin-face :foreground nil 'default) 1)))
+   (substring (face-attribute 'font-lock-builtin-face :foreground nil 'default) 1)
+   (pcase org-beamer-theme
+     ((rx "metropolis" line-end)
+      "  \\setbeamercolor{block title}{fg=level3, bg=obg}")
+     (_ "  \\setbeamercolor{title}{fg=documentTitle, bg=obg}
+  \\setbeamercolor{titlelike}{fg=ofg, bg=obg}
+  \\setbeamercolor{section title}{fg=level1, bg=obg}
+  \\setbeamercolor{frametitle}{fg=level2, bg=ofg!15!obg}
+  \\setbeamercolor{block title}{fg=level3, bg=obg}"))))
 
 (defun ox-chameleon--generate-beamer-colourings ()
   (format
@@ -258,26 +262,22 @@
 
 \\definecolor{builtin}{HTML}{%s}
 
+\\setbeamercolor{title}{fg=documentTitle, bg=obg}
 \\setbeamercolor{titlelike}{fg=ofg, bg=obg}
+\\setbeamercolor{section title}{fg=level1, bg=obg}
+\\setbeamercolor{frametitle}{fg=level2, bg=obg}
 \\setbeamercolor{block title}{fg=ofg, bg=obg}
+
+\\setbeamercolor{title separator}{fg=builtin}
+\\setbeamercolor{progress bar}{fg=builtin}
+
 \\setbeamercolor{normal text}{fg=ofg, bg=obg}
 \\setbeamercolor{alerted text}{fg=builtin}
+\\setbeamercolor*{item}{fg=itemlabel}
+
 \\setbeamercolor{navigation symbols}{fg=ofg!50!obg, bg=ofg!30!obg}
-\\setbeamercolor{progress bar}{fg=builtin}
-\\setbeamercolor{title separator}{fg=builtin}
-\\setbeamercolor{progress bar in head/foot}{fg=builtin}
-\\setbeamercolor{progress bar in section page}{fg=builtin}
 "
    (substring (face-attribute 'font-lock-builtin-face :foreground nil 'default) 1)))
-
-(defun ox-chameleon--generate-beamer-list-colourings ()
-  (format "
-%% beamer list labels
-
-\\definecolor{itemlabel}{HTML}{%s}
-\\setbeamercolor*{item}{fg=itemlabel}
-"
-          (substring (face-attribute 'org-list-dt :foreground nil 'default) 1)))
 
 (provide 'ox-chameleon)
 ;;; ox-chameleon.el ends here
