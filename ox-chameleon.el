@@ -70,7 +70,7 @@
    (ox-chameleon--generate-heading-colourings)
    (ox-chameleon--generate-text-colourings)
    (if (plist-get info :beamer-theme)
-       (if (string-match-p "default$" org-beamer-theme)
+       (if (string-match-p "default$" (plist-get info :beamer-theme))
            (ox-chameleon--generate-beamer-colourings)
          (ox-chameleon--generate-beamer-themed-colourings))
      (concat "\n\\pagecolor{obg}\n\\color{ofg}\n"
@@ -248,12 +248,12 @@
    (substring (face-attribute 'font-lock-builtin-face :foreground nil 'default) 1)
    (pcase org-beamer-theme
      ((rx "metropolis" line-end)
-      "  \\setbeamercolor{block title}{fg=level3, bg=obg}")
+      "  \\setbeamercolor{block title}{fg=level3, bg=}")
      (_ "  \\setbeamercolor{title}{fg=documentTitle, bg=obg}
   \\setbeamercolor{titlelike}{fg=ofg, bg=obg}
   \\setbeamercolor{section title}{fg=level1, bg=obg}
   \\setbeamercolor{frametitle}{fg=level2, bg=ofg!15!obg}
-  \\setbeamercolor{block title}{fg=level3, bg=obg}"))))
+  \\setbeamercolor{block title}{fg=level3, bg=}"))))
 
 (defun ox-chameleon--generate-beamer-colourings ()
   (format
@@ -262,11 +262,11 @@
 
 \\definecolor{builtin}{HTML}{%s}
 
-\\setbeamercolor{title}{fg=documentTitle, bg=obg}
-\\setbeamercolor{titlelike}{fg=ofg, bg=obg}
-\\setbeamercolor{section title}{fg=level1, bg=obg}
-\\setbeamercolor{frametitle}{fg=level2, bg=obg}
-\\setbeamercolor{block title}{fg=ofg, bg=obg}
+\\setbeamercolor{title}{fg=documentTitle, bg=}
+\\setbeamercolor{titlelike}{fg=ofg, bg=}
+\\setbeamercolor{section title}{fg=level1, bg=}
+\\setbeamercolor{frametitle}{fg=level2, bg=}
+\\setbeamercolor{block title}{fg=ofg, bg=}
 
 \\setbeamercolor{title separator}{fg=builtin}
 \\setbeamercolor{progress bar}{fg=builtin}
