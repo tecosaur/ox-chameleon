@@ -66,8 +66,10 @@
    "\n%% make document follow Emacs theme\n"
    (apply #'format "\n\\definecolor{obg}{HTML}{%s}\n\\definecolor{ofg}{HTML}{%s}\n"
           (ox-chameleon--generate-fgbg-colours))
+   (ox-chameleon--generate-heading-colourings)
    (if (plist-get info :beamer-theme)
-       (concat (if (string-match-p "default$" org-beamer-theme)
+       (concat (ox-chameleon--generate-beamer-structural-colourings)
+               (if (string-match-p "default$" org-beamer-theme)
                    (ox-chameleon--generate-beamer-colourings)
                  (ox-chameleon--generate-beamer-themed-colourings))
                (ox-chameleon--generate-beamer-list-colourings))
@@ -150,11 +152,10 @@
                       (face-attribute 'default :background nil 'default)
                       (face-attribute 'shadow :foreground nil 'default)))))))
 
-(defun ox-chameleon--generate-koma-structural-colourings ()
+(defun ox-chameleon--generate-heading-colourings ()
   (apply #'format
          "
-%% structural elements
-
+%% heading colours
 \\definecolor{documentTitle}{HTML}{%s}
 \\definecolor{documentInfo}{HTML}{%s}
 \\definecolor{level1}{HTML}{%s}
@@ -165,6 +166,34 @@
 \\definecolor{level6}{HTML}{%s}
 \\definecolor{level7}{HTML}{%s}
 \\definecolor{level8}{HTML}{%s}
+"
+         (mapcar (lambda (hex) (substring hex 1))
+                 (list
+                  (face-attribute 'org-document-title :foreground nil 'default)
+                  (face-attribute 'org-document-info :foreground nil 'default)
+                  (face-attribute 'outline-1 :foreground nil 'default)
+                  (face-attribute 'outline-2 :foreground nil 'default)
+                  (face-attribute 'outline-3 :foreground nil 'default)
+                  (face-attribute 'outline-4 :foreground nil 'default)
+                  (face-attribute 'outline-5 :foreground nil 'default)
+                  (face-attribute 'outline-6 :foreground nil 'default)
+                  (face-attribute 'outline-7 :foreground nil 'default)
+                  (face-attribute 'outline-8 :foreground nil 'default)))))
+
+(defun ox-chameleon--generate-beamer-structural-colourings ()
+  (format
+         "
+%% structural elements
+
+\\setbeamercolor{section title}{fg=level1, bg=obg}
+\\setbeamercolor{frametitle}{fg=level2, bg=obg}
+\\setbeamercolor{title}{fg=level1, bg=obg}
+"))
+
+(defun ox-chameleon--generate-koma-structural-colourings ()
+  (format
+         "
+%% structural elements
 
 \\addtokomafont{title}{\\color{documentTitle}}
 \\addtokomafont{author}{\\color{documentInfo}}
@@ -194,19 +223,7 @@
 \\renewcommand{\\labelenumiii}{\\textcolor{itemlabel}{\\theenumiii.}}
 \\renewcommand{\\labelenumiv}{\\textcolor{itemlabel}{\\theenumiv.}}
 "
-         (mapcar (lambda (hex) (substring hex 1))
-                 (list
-                  (face-attribute 'org-document-title :foreground nil 'default)
-                  (face-attribute 'org-document-info :foreground nil 'default)
-                  (face-attribute 'outline-1 :foreground nil 'default)
-                  (face-attribute 'outline-2 :foreground nil 'default)
-                  (face-attribute 'outline-3 :foreground nil 'default)
-                  (face-attribute 'outline-4 :foreground nil 'default)
-                  (face-attribute 'outline-5 :foreground nil 'default)
-                  (face-attribute 'outline-6 :foreground nil 'default)
-                  (face-attribute 'outline-7 :foreground nil 'default)
-                  (face-attribute 'outline-8 :foreground nil 'default)
-                  (substring (face-attribute 'org-list-dt :foreground nil 'default) 1)))))
+         (substring (face-attribute 'org-list-dt :foreground nil 'default) 1)))
 
 (defun ox-chameleon--generate-beamer-themed-colourings ()
   (format
@@ -222,7 +239,9 @@
   \\setbeamercolor{progress bar}{fg=builtin}
   \\setbeamercolor{title separator}{fg=builtin}
   \\setbeamercolor{progress bar in head/foot}{fg=builtin}
-  \\setbeamercolor{progress bar in section page}{fg=builtin}}
+  \\setbeamercolor{progress bar in section page}{fg=builtin}
+  \\setbeamercolor{block title}{fg=level3, bg=obg}
+}
 
 \\usepackage{etoolbox}
 \\makeatletter
