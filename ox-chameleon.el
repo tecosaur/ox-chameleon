@@ -35,15 +35,17 @@ When set to nil, the current theme will be used.")
 (defvar ox-chameleon--p nil
   "Used to indicate whether the current export is trying to blend in. Set just before being accessed.")
 
-(defun ox-chameleon-org-latex-detect (orig-fun info)
-  (setq ox-chameleon--p (when (equal (plist-get info :latex-class)
-                                     "chameleon")
-                          (plist-put info :latex-class
-                                     (if (plist-get info :beamer-theme) "beamer"
-                                       org-latex-default-class))
-                          t))
+(defun ox-chameleon--install (orig-fun info)
+  (setq ox-chameleon--p
+        (when (equal (plist-get info :latex-class) "chameleon")
+          (plist-put info :latex-class
+                     (if (plist-get info :beamer-theme)
+                         "beamer" org-latex-default-class))
+          (unless (plist-get info :latex-engraved-theme)
+            (plist-put info :latex-engraved-theme "t"))
+          t))
   (funcall orig-fun info))
-(advice-add 'org-export-install-filters :around #'ox-chameleon-org-latex-detect)
+(advice-add 'org-export-install-filters :around #'ox-chameleon--install)
 
 (defun ox-chameleon-org-latex-export (orig-fn info &optional template snippet?)
   (if (and ox-chameleon--p (not snippet?))
@@ -57,19 +59,6 @@ When set to nil, the current theme will be used.")
   (require 'highlight-numbers nil t)
   (require 'highlight-quoted nil t)
   (require 'rainbow-delimiters nil t))
-
-(defun ox-chameleon-engrave-wrapper (orig-fun contents info)
-  "Generate an engrave preset and bind it to `engrave-faces-preset-styles'.
-This works with `org-latex-template'-style functions."
-  (if (not ox-chameleon--p)
-      (funcall orig-fun contents info)
-    (require 'engrave-faces-latex)
-    (let ((engrave-faces-preset-styles (or ox-chameleon-engrave-preset
-                                           (engrave-faces-generate-preset))))
-      (funcall orig-fun contents info))))
-
-(advice-add 'org-latex-template :around #'ox-chameleon-engrave-wrapper)
-(advice-add 'org-beamer-template :around #'ox-chameleon-engrave-wrapper)
 
 (defun ox-chameleon-generate-colourings (info)
   (let ((engrave-faces-preset-styles (or ox-chameleon-engrave-preset
