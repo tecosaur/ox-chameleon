@@ -37,20 +37,33 @@ When set to nil, the current theme will be used.")
 
 (defun ox-chameleon--install (orig-fun info)
   (setq ox-chameleon--p
-        (when (equal (plist-get info :latex-class) "chameleon")
-          (plist-put info :latex-class
-                     (if (plist-get info :beamer-theme)
-                         "beamer" org-latex-default-class))
-          (unless (plist-get info :latex-engraved-theme)
-            (plist-put info :latex-engraved-theme "t"))
-          t))
+        (let ((backend (cl-struct-slot-value 'org-export-backend 'name (plist-get info :back-end))))
+          (pcase backend
+            ('latex (when (equal (plist-get info :latex-class) "chameleon")
+                       (plist-put info :latex-class
+                                  (if (plist-get info :beamer-theme)
+                                      "beamer" org-latex-default-class))
+                       (unless (plist-get info :latex-engraved-theme)
+                         (plist-put info :latex-engraved-theme "t"))
+                       t))
+            ('html (when (equal (plist-get info :html-content-class) "chameleon")
+                      (unless (plist-get info :html-engraved-theme)
+                        (plist-put info :html-engraved-theme "t"))
+                      t))
+            (_ nil))))
   (funcall orig-fun info))
 (advice-add 'org-export-install-filters :around #'ox-chameleon--install)
+
+(defun ox-chameleon-org-html-export (orig-fn info)
+  (when ox-chameleon--p
+    (plist-put info :html-head-extra (ox-chameleon-generate-html-colourings info)))
+  (funcall orig-fn info))
+(advice-add 'org-html--build-head :around #'ox-chameleon-org-html-export)
 
 (defun ox-chameleon-org-latex-export (orig-fn info &optional template snippet?)
   (if (and ox-chameleon--p (not snippet?))
       (concat (funcall orig-fn info template snippet?)
-              (ox-chameleon-generate-colourings info))
+              (ox-chameleon-generate-latex-colourings info))
     (funcall orig-fn info template snippet?)))
 (advice-add 'org-latex-make-preamble :around #'ox-chameleon-org-latex-export)
 
@@ -60,22 +73,23 @@ When set to nil, the current theme will be used.")
   (require 'highlight-quoted nil t)
   (require 'rainbow-delimiters nil t))
 
-(defun ox-chameleon-generate-colourings (info)
-  (let ((engrave-faces-current-preset-style
-         (or ox-chameleon-engrave-preset (engrave-faces-get-theme t))))
+(defun ox-chameleon-generate-latex-colourings (info)
+  (let ((engrave-faces-preset-styles (or ox-chameleon-engrave-preset
+                                         (engrave-faces-get-theme t)
+                                         (engrave-faces-generate-preset))))
     (concat
      "\n%% make document follow Emacs theme\n"
      (apply #'format "\n\\definecolor{obg}{HTML}{%s}\n\\definecolor{ofg}{HTML}{%s}\n"
             (ox-chameleon--generate-fgbg-colours))
-     (ox-chameleon--generate-heading-colourings)
-     (ox-chameleon--generate-text-colourings)
+     (ox-chameleon--generate-latex-heading-colourings)
+     (ox-chameleon--generate-latex-text-colourings)
      (if (plist-get info :beamer-theme)
          (if (string-match-p "default$" (plist-get info :beamer-theme))
              (ox-chameleon--generate-beamer-colourings)
            (ox-chameleon--generate-beamer-themed-colourings))
        (concat "\n\\pagecolor{obg}\n\\color{ofg}\n"
                (ox-chameleon--generate-koma-structural-colourings)))
-     (ox-chameleon--generate-src-colourings)
+     (ox-chameleon--generate-latex-src-colourings)
      "\n%% end customisations\n\n")))
 
 (defun ox-chameleon--face-attr (face attr)
@@ -103,7 +117,100 @@ When set to nil, the current theme will be used.")
                         (if (and (< lf 0.4) (< (* sf lf) 0.1)) "#000000" fg)))
               (list bg fg)))))
 
-(defun ox-chameleon--generate-text-colourings ()
+(defun ox-chameleon--symbol->weight (weight)
+  (pcase weight
+    ('ultra-light 100) ('extra-light 100)
+    ('light 200) ('thin 200)
+    ('semi-light 300)
+    ('book 400) ('normal 400) ('regular 400)
+    ('medium 500)
+    ('semi-bold 600) ('demi-bold 600)
+    ('bold 700)
+    ('extra-bold 800)
+    ('heavy 900) ('ultra-bold 900)
+    ('black 950)))
+
+(defun ox-chameleon-generate-html-colourings (info)
+  "Generate the style tag to be inserted into the html `<head>'."
+  (let ((engrave-faces-preset-styles (or ox-chameleon-engrave-preset
+                                         (engrave-faces-get-theme (car custom-enabled-themes))
+                                         (engrave-faces-generate-preset))))
+    (concat "<style>"
+            (ox-chameleon--generate-html-root-style)
+            "body { background: var(--bg); color: var(--fg); font-family: var(--variable-pitch-font);}"
+            (ox-chameleon--generate-html-heading-style)
+            (ox-chameleon--generate-html-code-style)
+            (ox-chameleon--face->css 'link "a")
+            (ox-chameleon--face->css 'link-visited "a:visited")
+            (ox-chameleon--face->css 'highlight "a:hover")
+            "</style>")))
+
+(defun ox-chameleon--generate-html-root-style ()
+  (concat
+   ":root {"
+   (apply #'format "--bg: #%s;\n--fg: #%s;\n" (ox-chameleon--generate-fgbg-colours))
+   (format "--variable-pitch-font: '%s';\n--fixed-pitch-font: '%s';\n}"
+           (ox-chameleon--face-attr 'variable-pitch :family)
+           (ox-chameleon--face-attr 'default :family))))
+
+(defun ox-chameleon--generate-html-heading-style ()
+  (concat
+   (ox-chameleon--face->css 'outline-1 "h1")
+   (string-join
+    (cl-loop for i from 2 to 5
+             collect (ox-chameleon--face->css
+                       (intern (format "outline-%s" (- i 1)))
+                       (format "h%s" (- i 1)))))))
+
+(defun ox-chameleon--generate-html-rainbow-parens ()
+  (when (require 'rainbow-delimiters nil t)
+    (string-join
+     (cl-loop for i from 1 to 9
+              collect (ox-chameleon--face->css
+                       (intern (format "rainbow-delimiters-depth-%s-face" i))
+                       (format ".org-rainbow-delimiters-depth-%s" i))))))
+
+(defun ox-chameleon--generate-html-code-style ()
+  (concat
+   (ox-chameleon--face->css 'org-block ".org-src-container")
+   (ox-chameleon--face->css 'highlight-quoted-symbol ".org-highlight-quoted-symbol")
+   (ox-chameleon--face->css 'highlight-quoted-quote ".org-highlight-quoted-quote")
+   (ox-chameleon--face->css 'highlight-numbers-number ".org-highlight-numbers-number")
+   (ox-chameleon--generate-html-code-style-font-lock)
+   (ox-chameleon--generate-html-rainbow-parens)))
+
+(defun ox-chameleon--generate-html-code-style-font-lock ()
+  (string-join
+   (mapcar (lambda (face)
+             (ox-chameleon--face->css
+              face
+              (format ".org-%s" (substring (symbol-name face) 10 -5))))
+           '(font-lock-comment-face
+             font-lock-comment-delimiter-face
+             font-lock-string-face
+             font-lock-doc-face
+             font-lock-doc-markup-face
+             font-lock-keyword-face
+             font-lock-builtin-face
+             font-lock-function-name-face
+             font-lock-variable-name-face
+             font-lock-type-face
+             font-lock-constant-face
+             font-lock-warning-face
+             font-lock-negation-char-face
+             font-lock-preprocessor-face))))
+
+(defun ox-chameleon--face->css (face &optional selector)
+  (let ((fg (format "color: %s;" (ox-chameleon--face-attr face :foreground)))
+        (bg (format "background: %s;" (ox-chameleon--face-attr face :background)))
+        (weight (format "font-weight: %s;" (ox-chameleon--symbol->weight (or (ox-chameleon--face-attr face :weight)
+                                                                             'normal))))
+        (family (format "font-family: %s;" (ox-chameleon--face-attr face :family)))
+        (pre (if selector (format "%s {" selector) ""))
+        (post (if selector "}" "")))
+    (concat pre fg bg weight family post)))
+
+(defun ox-chameleon--generate-latex-text-colourings ()
   (apply #'format
          "
 %% textual elements
@@ -132,7 +239,7 @@ When set to nil, the current theme will be used.")
                   (ox-chameleon--face-attr 'org-code :foreground)
                   (ox-chameleon--face-attr 'org-verbatim :foreground)))))
 
-(defun ox-chameleon--generate-src-colourings ()
+(defun ox-chameleon--generate-latex-src-colourings ()
   (apply #'format
          "
 %% code blocks
@@ -149,7 +256,7 @@ When set to nil, the current theme will be used.")
                                        0.95)
                          (ox-chameleon--face-attr 'shadow :foreground))))))
 
-(defun ox-chameleon--generate-heading-colourings ()
+(defun ox-chameleon--generate-latex-heading-colourings ()
   (apply #'format
          "
 %% heading colours
