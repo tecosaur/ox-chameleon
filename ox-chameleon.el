@@ -92,11 +92,12 @@ When set to nil, the current theme will be used.")
      (ox-chameleon--generate-latex-src-colourings)
      "\n%% end customisations\n\n")))
 
-(defun ox-chameleon--face-attr (face attr)
-  (if-let ((spec (cdr (assoc face engrave-faces-current-preset-style)))
+(defun ox-chameleon--face-attr (face attr &optional no-default)
+  (if-let ((spec (cdr (assoc face engrave-faces-preset-styles)))
            (value (plist-get spec attr)))
       value
-    (when engrave-faces-current-preset-style
+    (when (and engrave-faces-preset-styles
+               (not no-default))
       (message "ox-chameleon: %s %s not provided, falling back to current theme."
                face attr))
     (face-attribute face attr nil 'default)))
@@ -201,14 +202,19 @@ When set to nil, the current theme will be used.")
              font-lock-preprocessor-face))))
 
 (defun ox-chameleon--face->css (face &optional selector)
-  (let ((fg (format "color: %s;" (ox-chameleon--face-attr face :foreground)))
-        (bg (format "background: %s;" (ox-chameleon--face-attr face :background)))
-        (weight (format "font-weight: %s;" (ox-chameleon--symbol->weight (or (ox-chameleon--face-attr face :weight)
-                                                                             'normal))))
-        (family (format "font-family: %s;" (ox-chameleon--face-attr face :family)))
-        (pre (if selector (format "%s {" selector) ""))
+  (let ((pre (if selector (format "%s {" selector) ""))
         (post (if selector "}" "")))
-    (concat pre fg bg weight family post)))
+    (concat pre
+            (string-join
+             (cl-map 'list (lambda (attr)
+                             (let ((val (ox-chameleon--face-attr face (cdr attr) t)))
+                               (when (engrave-faces--check-nondefault (cdr attr) val)
+                                 (format "%s: %s;" (car attr) val))))
+                     '(("color" . :foreground)
+                       ("background" . :background)
+                       ("font-weight" . :weight)
+                       ("font-family" . :family))))
+            post)))
 
 (defun ox-chameleon--generate-latex-text-colourings ()
   (apply #'format
