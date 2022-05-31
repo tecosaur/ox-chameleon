@@ -118,12 +118,14 @@ When set to nil, the current theme will be used.")
                         (if (and (< lf 0.4) (< (* sf lf) 0.1)) "#000000" fg)))
               (list bg fg)))))
 
-(defun ox-chameleon--symbol->weight (weight)
+(defun ox-chameleon--symbol-to-weight (weight)
   (pcase weight
     ('ultra-light 100) ('extra-light 100)
-    ('light 200) ('thin 200)
-    ('semi-light 300)
-    ('book 400) ('normal 400) ('regular 400)
+    ('thin 200)
+    ('light 300)
+    ('semi-light 350)
+    ('normal 400) ('regular 400)
+    ('book 450)
     ('medium 500)
     ('semi-bold 600) ('demi-bold 600)
     ('bold 700)
@@ -132,7 +134,7 @@ When set to nil, the current theme will be used.")
     ('black 950)))
 
 (defun ox-chameleon-generate-html-colourings (info)
-  "Generate the style tag to be inserted into the html `<head>'."
+  "Generate the style tag to be inserted into the html <head>."
   (let ((engrave-faces-preset-styles (or ox-chameleon-engrave-preset
                                          (engrave-faces-get-theme (car custom-enabled-themes))
                                          (engrave-faces-generate-preset))))
@@ -141,9 +143,9 @@ When set to nil, the current theme will be used.")
             "body { background: var(--bg); color: var(--fg); font-family: var(--variable-pitch-font);}"
             (ox-chameleon--generate-html-heading-style)
             (ox-chameleon--generate-html-code-style)
-            (ox-chameleon--face->css 'link "a")
-            (ox-chameleon--face->css 'link-visited "a:visited")
-            (ox-chameleon--face->css 'highlight "a:hover")
+            (ox-chameleon--face-to-css 'link "a")
+            (ox-chameleon--face-to-css 'link-visited "a:visited")
+            (ox-chameleon--face-to-css 'highlight "a:hover")
             "</style>")))
 
 (defun ox-chameleon--generate-html-root-style ()
@@ -156,10 +158,10 @@ When set to nil, the current theme will be used.")
 
 (defun ox-chameleon--generate-html-heading-style ()
   (concat
-   (ox-chameleon--face->css 'outline-1 "h1")
+   (ox-chameleon--face-to-css 'outline-1 "h1")
    (string-join
     (cl-loop for i from 2 to 5
-             collect (ox-chameleon--face->css
+             collect (ox-chameleon--face-to-css
                        (intern (format "outline-%s" (- i 1)))
                        (format "h%s" (- i 1)))))))
 
@@ -167,23 +169,49 @@ When set to nil, the current theme will be used.")
   (when (require 'rainbow-delimiters nil t)
     (string-join
      (cl-loop for i from 1 to 9
-              collect (ox-chameleon--face->css
+              collect (ox-chameleon--face-to-css
                        (intern (format "rainbow-delimiters-depth-%s-face" i))
                        (format ".org-rainbow-delimiters-depth-%s" i))))))
 
 (defun ox-chameleon--generate-html-code-style ()
   (concat
-   (ox-chameleon--face->css 'org-block ".org-src-container")
-   (ox-chameleon--face->css 'highlight-quoted-symbol ".org-highlight-quoted-symbol")
-   (ox-chameleon--face->css 'highlight-quoted-quote ".org-highlight-quoted-quote")
-   (ox-chameleon--face->css 'highlight-numbers-number ".org-highlight-numbers-number")
+   (ox-chameleon--face-to-css 'org-block ".org-src-container")
+   (ox-chameleon--face-to-css 'highlight-quoted-symbol ".org-highlight-quoted-symbol")
+   (ox-chameleon--face-to-css 'highlight-quoted-quote ".org-highlight-quoted-quote")
+   (ox-chameleon--face-to-css 'highlight-numbers-number ".org-highlight-numbers-number")
    (ox-chameleon--generate-html-code-style-font-lock)
-   (ox-chameleon--generate-html-rainbow-parens)))
+   (ox-chameleon--generate-html-rainbow-parens)
+   (ox-chameleon--generate-html-block-names)))
+
+(defun ox-chameleon--generate-html-block-names ()
+  (string-join
+   (mapcar (lambda (lang)
+             (if-let ((symbols (with-temp-buffer
+                                 (org-mode)
+                                 prettify-symbols-alist)))
+                 (let ((begin (alist-get "#+begin_src" symbols nil nil #'string=))
+                       (end (alist-get "#+end_src" symbols nil nil #'string=)))
+                   (format
+                    "pre.src-%s::before { content: '%s %s'; display: block; %s }
+                     pre.src-%s::after  { content: '%s'; display: block; %s }"
+                    (symbol-name (car lang))
+                    begin
+                    (symbol-name (car lang))
+                    (ox-chameleon--face-to-css 'org-block-begin-line)
+                    (symbol-name (car lang))
+                    end
+                    (ox-chameleon--face-to-css 'org-block-end-line)))
+               (format
+                "pre.src-%s::before { content: '%s'; display: block; %s }"
+                (symbol-name (car lang))
+                (replace-regexp-in-string "-" " " (capitalize (symbol-name (car lang))))
+                (ox-chameleon--face-to-css 'org-block-begin-line))))
+           org-babel-load-languages)))
 
 (defun ox-chameleon--generate-html-code-style-font-lock ()
   (string-join
    (mapcar (lambda (face)
-             (ox-chameleon--face->css
+             (ox-chameleon--face-to-css
               face
               (format ".org-%s" (substring (symbol-name face) 10 -5))))
            '(font-lock-comment-face
@@ -201,19 +229,19 @@ When set to nil, the current theme will be used.")
              font-lock-negation-char-face
              font-lock-preprocessor-face))))
 
-(defun ox-chameleon--face->css (face &optional selector)
+(defun ox-chameleon--face-to-css (face &optional selector)
   (let ((pre (if selector (format "%s {" selector) ""))
         (post (if selector "}" "")))
     (concat pre
             (string-join
              (cl-map 'list (lambda (attr)
-                             (let ((val (ox-chameleon--face-attr face (cdr attr) t)))
-                               (when (engrave-faces--check-nondefault (cdr attr) val)
-                                 (format "%s: %s;" (car attr) val))))
-                     '(("color" . :foreground)
-                       ("background" . :background)
-                       ("font-weight" . :weight)
-                       ("font-family" . :family))))
+                             (let ((val (ox-chameleon--face-attr face (car attr) t)))
+                               (when (engrave-faces--check-nondefault (car attr) val)
+                                 (format "%s: %s;" (cdr attr) val))))
+                     '((:foreground . "color")
+                       (:background . "background")
+                       (:weight . "font-weight")
+                       (:family . "font-family"))))
             post)))
 
 (defun ox-chameleon--generate-latex-text-colourings ()
