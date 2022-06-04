@@ -74,9 +74,8 @@ When set to nil, the current theme will be used.")
   (require 'rainbow-delimiters nil t))
 
 (defun ox-chameleon-generate-latex-colourings (info)
-  (let ((engrave-faces-preset-styles (or ox-chameleon-engrave-preset
-                                         (engrave-faces-get-theme t)
-                                         (engrave-faces-generate-preset))))
+  (let ((engrave-faces-current-preset-style (or ox-chameleon-engrave-preset
+                                                (engrave-faces-get-theme t))))
     (concat
      "\n%% make document follow Emacs theme\n"
      (apply #'format "\n\\definecolor{obg}{HTML}{%s}\n\\definecolor{ofg}{HTML}{%s}\n"
@@ -93,10 +92,10 @@ When set to nil, the current theme will be used.")
      "\n%% end customisations\n\n")))
 
 (defun ox-chameleon--face-attr (face attr &optional no-default)
-  (if-let ((spec (cdr (assoc face engrave-faces-preset-styles)))
+  (if-let ((spec (cdr (assoc face engrave-faces-current-preset-style)))
            (value (plist-get spec attr)))
       value
-    (when (and engrave-faces-preset-styles
+    (when (and engrave-faces-current-preset-style
                (not no-default))
       (message "ox-chameleon: %s %s not provided, falling back to current theme."
                face attr))
@@ -120,9 +119,8 @@ When set to nil, the current theme will be used.")
 
 (defun ox-chameleon-generate-html-colourings (info)
   "Generate the style tag to be inserted into the html <head>."
-  (let ((engrave-faces-preset-styles (or ox-chameleon-engrave-preset
-                                         (engrave-faces-get-theme (car custom-enabled-themes))
-                                         (engrave-faces-generate-preset))))
+  (let ((engrave-faces-current-preset-style (or ox-chameleon-engrave-preset
+                                                (engrave-faces-get-theme t))))
     (require 'engrave-faces-html)
     (concat "<style>"
             (ox-chameleon--generate-html-root-style)
