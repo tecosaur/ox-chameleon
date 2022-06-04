@@ -9,7 +9,7 @@
 ;; Version: 0.0.1
 ;; Keywords: convenience faces
 ;; Homepage: https://github.com/tecosaur/ox-chameleon
-;; Package-Requires: ((emacs "26.3") (engrave-faces "0.1.0"))
+;; Package-Requires: ((emacs "26.3") (engrave-faces "0.3.1"))
 ;;
 ;; This file is not part of GNU Emacs.
 ;;
