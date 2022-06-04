@@ -23,6 +23,8 @@
   (require 'cl-lib)
   (require 'rx))
 
+(require 'engrave-faces)
+
 (defvar engrave-faces-current-preset-style)
 
 (defvar ox-chameleon-snap-fgbg-to-bw nil
@@ -47,6 +49,7 @@ When set to nil, the current theme will be used.")
                          (plist-put info :latex-engraved-theme "t"))
                        t))
             ('html (when (equal (plist-get info :html-content-class) "chameleon")
+                     (plist-put info :html-content-class (concat "chameleon " (symbol-name (car custom-enabled-themes))))
                       (unless (plist-get info :html-engraved-theme)
                         (plist-put info :html-engraved-theme "t"))
                       t))
@@ -98,8 +101,8 @@ When set to nil, the current theme will be used.")
     (when (and engrave-faces-current-preset-style
                (not no-default))
       (message "ox-chameleon: %s %s not provided, falling back to current theme."
-               face attr))
-    (face-attribute face attr nil 'default)))
+               face attr)
+      (face-attribute face attr nil 'default))))
 
 (defun ox-chameleon--hex-to-srgb (hex)
   (mapcar (lambda (range) (/ (string-to-number (apply #'substring hex range) 16) 255.0))
@@ -125,6 +128,7 @@ When set to nil, the current theme will be used.")
     (concat "<style>"
             (ox-chameleon--generate-html-root-style)
             "body { background: var(--bg); color: var(--fg); font-family: var(--variable-pitch-font);}"
+            "pre { font-family: var(--fixed-pitch-font);}"
             (ox-chameleon--generate-html-heading-style)
             (ox-chameleon--generate-html-code-style)
             (ox-chameleon--face-to-css 'link "a")
