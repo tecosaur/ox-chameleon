@@ -39,20 +39,34 @@ When set to nil, the current theme will be used.")
 
 (defun ox-chameleon--install (orig-fun info)
   (setq ox-chameleon--p
-        (let ((backend (cl-struct-slot-value 'org-export-backend 'name (plist-get info :back-end))))
+        (let ((backend (cl-struct-slot-value 'org-export-backend 'name
+                                             (plist-get info :back-end))))
           (pcase backend
-            ('latex (when (equal (plist-get info :latex-class) "chameleon")
-                       (plist-put info :latex-class
-                                  (if (plist-get info :beamer-theme)
-                                      "beamer" org-latex-default-class))
-                       (unless (plist-get info :latex-engraved-theme)
-                         (plist-put info :latex-engraved-theme "t"))
-                       t))
-            ('html (when (equal (plist-get info :html-content-class) "chameleon")
-                     (plist-put info :html-content-class (concat "chameleon " (symbol-name (car custom-enabled-themes))))
-                      (unless (plist-get info :html-engraved-theme)
-                        (plist-put info :html-engraved-theme "t"))
-                      t))
+            ('latex
+             (and (equal (plist-get info :latex-class) "chameleon")
+                  (progn
+                    (plist-put info :latex-class org-latex-default-class)
+                    (unless (plist-get info :latex-engraved-theme)
+                      (plist-put info :latex-engraved-theme "t"))
+                    t)))
+            ('beamer
+             (and (equal (plist-get info :beamer-theme) "chameleon")
+                  (progn
+                    (plist-put info :beamer-theme org-beamer-theme)
+                    (if (equal (plist-get info :latex-class) "chameleon")
+                        (plist-put info :latex-class "beamer"))
+                    (unless (plist-get info :latex-engraved-theme)
+                      (plist-put info :latex-engraved-theme "t"))
+                    t)))
+            ('html
+             (and (equal (plist-get info :html-content-class) "chameleon")
+                  (progn
+                    (plist-put info :html-content-class
+                               (concat "chameleon "
+                                       (symbol-name (car custom-enabled-themes))))
+                    (unless (plist-get info :html-engraved-theme)
+                      (plist-put info :html-engraved-theme "t"))
+                    t)))
             (_ nil))))
   (funcall orig-fun info))
 (advice-add 'org-export-install-filters :around #'ox-chameleon--install)
