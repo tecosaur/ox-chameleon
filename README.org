@@ -13,3 +13,27 @@ formats could be supported in future. To use with LaTeX just change the
 documents =#+latex_class= to use the pseudo-class =chameleon= and
 ~org-latex-default-class~ will be used with some extra generated preamble content
 to make the result similar to your buffer 🙂.
+
+* Required =ox-latex= tweaks
+
+For =ox-chameleon= to work, two things are needed:
+1. Some KOMA-script tooling, provided by either
+   a. Using a KOMA class, such as =scrartcl=, =scrrept=, or =scrbook=
+   b. Adding the =scrextend= package
+2. The =xcolor= package, if its not already part of the preamble
+
+To add packages to the LaTeX preamble globally, you can use
+~org-latex-packages-alist~ like so
+
+#+begin_src emacs-lisp
+(add-to-list 'org-latex-packages-alist '("" "scrextend" nil))
+(add-to-list 'org-latex-packages-alist '("" "xcolor" nil))
+#+end_src
+
+Alternatively, you can just add them to documents where =ox-chameleon= is used,
+like so
+
+#+begin_src org
+,#+latex_header: \usepackage{scrextend}
+,#+latex_header: \usepackage{xcolor}
+#+end_src
