@@ -24,6 +24,7 @@
   (require 'rx))
 
 (require 'engrave-faces)
+(require 'ox)
 
 (defvar engrave-faces-current-preset-style)
 
