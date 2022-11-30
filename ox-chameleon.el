@@ -31,9 +31,14 @@
 (defvar ox-chameleon-snap-fgbg-to-bw nil
   "When non-nil, snap bg/fg colours to black/white when they're close.")
 
-(defvar ox-chameleon-engrave-preset nil
+(defvar ox-chameleon-engrave-theme nil
   "An engrave-faces preset to use when generating stylings.
-When set to nil, the current theme will be used.")
+When set to nil, the current theme will be used.
+This can be overriden via #+chameleon_theme.")
+
+(defconst ox-chameleon--theme-keyword
+  "CHAMELEON_THEME"
+  "Keyword used to set the engrave theme used for the export.")
 
 (defvar ox-chameleon--p nil
   "Used to indicate whether the current export is trying to blend in. Set just before being accessed.")
@@ -41,7 +46,17 @@ When set to nil, the current theme will be used.")
 (defun ox-chameleon--install (orig-fun info)
   (setq ox-chameleon--p
         (let ((backend (cl-struct-slot-value 'org-export-backend 'name
-                                             (plist-get info :back-end))))
+                                             (plist-get info :back-end)))
+              (chameleon-theme
+               (or (org-element-map
+                       (plist-get info :parse-tree)
+                       'keyword
+                     (lambda (keyword)
+                       (and (string= (org-element-property :key keyword)
+                                     ox-chameleon--theme-keyword)
+                            (org-element-property :value keyword)))
+                     info t)
+                   "t")))
           (cond
            ((and (org-export-derived-backend-p backend 'beamer)
                  (equal (plist-get info :beamer-theme) "chameleon"))
@@ -49,13 +64,13 @@ When set to nil, the current theme will be used.")
             (if (equal (plist-get info :latex-class) "chameleon")
                 (plist-put info :latex-class "beamer"))
             (unless (plist-get info :latex-engraved-theme)
-              (plist-put info :latex-engraved-theme "t"))
+              (plist-put info :latex-engraved-theme chameleon-theme))
             t)
            ((and (org-export-derived-backend-p backend 'latex)
                  (equal (plist-get info :latex-class) "chameleon"))
             (plist-put info :latex-class org-latex-default-class)
             (unless (plist-get info :latex-engraved-theme)
-              (plist-put info :latex-engraved-theme "t"))
+              (plist-put info :latex-engraved-theme chameleon-theme))
             t)
            ((and (org-export-derived-backend-p backend 'html)
                  (equal (plist-get info :html-content-class) "chameleon"))
@@ -63,7 +78,7 @@ When set to nil, the current theme will be used.")
                        (concat "chameleon "
                                (symbol-name (car custom-enabled-themes))))
             (unless (plist-get info :html-engraved-theme)
-              (plist-put info :html-engraved-theme "t"))
+              (plist-put info :html-engraved-theme chameleon-theme))
             t))))
   (funcall orig-fun info))
 (advice-add 'org-export-install-filters :around #'ox-chameleon--install)
@@ -87,9 +102,51 @@ When set to nil, the current theme will be used.")
   (require 'highlight-quoted nil t)
   (require 'rainbow-delimiters nil t))
 
+(defun ox-chameleon--get-theme (info)
+  "Obtain an engraved theme structure based on INFO.
+The theme will be set by the `ox-chameleon--theme-keyword' keyword, if present.
+If no keyword is present, `ox-chameleon-engrave-theme' will be used if non-nil,
+and the current theme otherwise."
+  (let* ((keyword-theme
+          (org-element-map
+              (plist-get info :parse-tree)
+              'keyword
+            (lambda (keyword)
+              (and (string= (org-element-property :key keyword)
+                            ox-chameleon--theme-keyword)
+                   (intern (org-element-property :value keyword))))
+            info t))
+         (theme
+          (copy-sequence ; To avoid modifying the theme itself.
+           (cond
+            (keyword-theme (engrave-faces-get-theme keyword-theme))
+            ((symbolp ox-chameleon-engrave-theme)
+             (engrave-faces-get-theme ox-chameleon-engrave-theme))
+            ((consp ox-chameleon-engrave-theme)
+             ox-chameleon-engrave-theme)
+            (engrave-faces-get-theme t))))
+         (org-default-extras
+          `((org-document-title :short "org-title" :slug "ot" :foreground
+             ,(plist-get (alist-get 'font-lock-builtin-face theme) :foreground))
+            (org-document-info :short "org-docinfo" :slug "odi" :foreground
+                               ,(plist-get (alist-get 'font-lock-builtin-face theme) :foreground))
+            (org-link :short "org-link" :slug "ol" :foreground
+                      ,(plist-get (alist-get 'link theme) :foreground))
+            (org-list-dt :short "org-list" :slug "oli" :foreground
+                         ,(plist-get (alist-get 'font-lock-keyword-face theme) :foreground))
+            (org-code :short "org-code" :slug "oc" :foreground
+                      ,(plist-get (alist-get 'highlight-numbers-number theme) :foreground))
+            (org-verbatim :short "org-verbatim" :slug "ov" :foreground
+                          ,(plist-get (alist-get 'font-lock-string-face theme) :foreground))
+            (org-cite :short "org-cite" :slug "ok" :foreground
+                      ,(plist-get (alist-get 'font-lock-function-name-face theme) :foreground)))))
+    (dolist (extra org-default-extras)
+      (unless (assoc (car extra) theme)
+        (push extra theme)))
+    theme))
+
 (defun ox-chameleon-generate-latex-colourings (info)
-  (let ((engrave-faces-current-preset-style (or ox-chameleon-engrave-preset
-                                                (engrave-faces-get-theme t))))
+  (let ((engrave-faces-current-preset-style (ox-chameleon--get-theme info)))
     (concat
      "\n%% make document follow Emacs theme\n"
      (apply #'format "\n\\definecolor{obg}{HTML}{%s}\n\\definecolor{ofg}{HTML}{%s}\n"
@@ -133,8 +190,7 @@ When set to nil, the current theme will be used.")
 
 (defun ox-chameleon-generate-html-colourings (info)
   "Generate the style tag to be inserted into the html <head>."
-  (let ((engrave-faces-current-preset-style (or ox-chameleon-engrave-preset
-                                                (engrave-faces-get-theme t))))
+  (let ((engrave-faces-current-preset-style (ox-chameleon--get-theme info)))
     (require 'engrave-faces-html)
     (concat "<style>"
             (ox-chameleon--generate-html-root-style)
