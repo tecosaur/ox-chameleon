@@ -82,7 +82,7 @@ When set to nil, the current theme will be used.")
 (advice-add 'org-latex-make-preamble :around #'ox-chameleon-org-latex-export)
 
 ;; Require modes that provide faces used in `engrave-faces-generate-preset'.
-(unless (interactive-p)
+(when noninteractive
   (require 'highlight-numbers nil t)
   (require 'highlight-quoted nil t)
   (require 'rainbow-delimiters nil t))
