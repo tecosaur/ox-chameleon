@@ -161,8 +161,8 @@ When set to nil, the current theme will be used.")
    (string-join
     (cl-loop for i from 2 to 5
              collect (ox-chameleon--face-to-css
-                       (intern (format "outline-%s" (- i 1)))
-                       (format "h%s" (- i 1)))))))
+                      (intern (format "outline-%s" (- i 1)))
+                      (format "h%s" (- i 1)))))))
 
 (defun ox-chameleon--generate-html-rainbow-parens ()
   (when (require 'rainbow-delimiters nil t)
@@ -320,11 +320,6 @@ When set to nil, the current theme will be used.")
                   (ox-chameleon--face-attr 'outline-7 :foreground)
                   (ox-chameleon--face-attr 'outline-8 :foreground)))))
 
-(defun ox-chameleon--generate-beamer-structural-colourings ()
-  (format
-   "
-"))
-
 (defun ox-chameleon--generate-koma-structural-colourings ()
   (format
    "
@@ -364,8 +359,8 @@ When set to nil, the current theme will be used.")
         (link-fg (substring (ox-chameleon--face-attr 'org-link :foreground) 1))
         (ol-3-fg (substring (ox-chameleon--face-attr 'outline-3 :foreground) 1))
         (default-fg (substring (ox-chameleon--face-attr 'default :foreground) 1)))
-  (format
-   "
+    (format
+     "
 %% beamer
 
 \\definecolor{builtin}{HTML}{%s}
@@ -391,19 +386,19 @@ When set to nil, the current theme will be used.")
   \\edef\\insertsectionhead{\\begingroup\\noexpand\\hypersetup{hidelinks}\\noexpand\\hyperlink{Navigation\\the\\c@page}{\\unexpanded{#1}}\\endgroup}}
 \\makeatother
 "
-   builtin-fg
-   varname-fg
-   (if (or (string= builtin-fg ol-3-fg)
-           (string= builtin-fg link-fg)
-           (string= builtin-fg default-fg))
-       "varname" "builtin")
-   (pcase org-beamer-theme
-     ((rx "metropolis" line-end)
-      (format
-       "  \\setbeamercolor{block title}{fg=%s, bg=}"
-       (if (string= builtin-fg ol-3-fg)
-           "level1" "level3")))
-     (_ "  \\setbeamercolor{title}{fg=documentTitle, bg=obg}
+     builtin-fg
+     varname-fg
+     (if (or (string= builtin-fg ol-3-fg)
+             (string= builtin-fg link-fg)
+             (string= builtin-fg default-fg))
+         "varname" "builtin")
+     (pcase org-beamer-theme
+       ((rx "metropolis" line-end)
+        (format
+         "  \\setbeamercolor{block title}{fg=%s, bg=}"
+         (if (string= builtin-fg ol-3-fg)
+             "level1" "level3")))
+       (_ "  \\setbeamercolor{title}{fg=documentTitle, bg=obg}
   \\setbeamercolor{titlelike}{fg=ofg, bg=obg}
   \\setbeamercolor{section title}{fg=level1, bg=obg}
   \\setbeamercolor{frametitle}{fg=level2, bg=ofg!15!obg}
