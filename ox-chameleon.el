@@ -120,11 +120,12 @@ and the current theme otherwise."
           (copy-sequence ; To avoid modifying the theme itself.
            (cond
             (keyword-theme (engrave-faces-get-theme keyword-theme))
-            ((symbolp ox-chameleon-engrave-theme)
+            ((and (symbolp ox-chameleon-engrave-theme)
+                  (not (eq ox-chameleon-engrave-theme nil)))
              (engrave-faces-get-theme ox-chameleon-engrave-theme))
             ((consp ox-chameleon-engrave-theme)
              ox-chameleon-engrave-theme)
-            (engrave-faces-get-theme t))))
+            (t (engrave-faces-get-theme t)))))
          (org-default-extras
           `((org-document-title :short "org-title" :slug "ot" :foreground
              ,(plist-get (alist-get 'font-lock-builtin-face theme) :foreground))
