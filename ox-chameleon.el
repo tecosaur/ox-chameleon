@@ -45,8 +45,9 @@ This can be overriden via #+chameleon_theme.")
 
 (defun ox-chameleon--install (orig-fun info)
   (setq ox-chameleon--p
-        (let ((backend (cl-struct-slot-value 'org-export-backend 'name
-                                             (plist-get info :back-end)))
+        (let ((backend
+               (and (plist-get info :back-end)
+                    (org-export-backend-name (plist-get info :back-end))))
               (chameleon-theme
                (or (org-element-map
                        (plist-get info :parse-tree)
