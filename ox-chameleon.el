@@ -291,7 +291,7 @@ and the current theme otherwise."
     (concat pre
             (string-join
              (cl-map 'list (lambda (attr)
-                             (let ((val (ox-chameleon--face-attr face (car attr) t)))
+                             (let ((val (ox-chameleon--face-attr face (car attr))))
                                (when (engrave-faces--check-nondefault (car attr) val)
                                  (format "%s: %s;" (cdr attr)
                                          (if (eq :weight (car attr))
