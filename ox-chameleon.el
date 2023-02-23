@@ -208,9 +208,24 @@ and the current theme otherwise."
   (concat
    ":root {"
    (apply #'format "--bg: #%s;\n--fg: #%s;\n" (ox-chameleon--generate-fgbg-colours))
-   (format "--variable-pitch-font: '%s';\n--fixed-pitch-font: '%s';\n}"
+   (ox-chameleon--generate-html-ansi-colours)
+   (format "--variable-pitch-font: '%s';\n--fixed-pitch-font: '%s';"
            (ox-chameleon--face-attr 'variable-pitch :family)
-           (ox-chameleon--face-attr 'default :family))))
+           (ox-chameleon--face-attr 'default :family))
+   "}"))
+
+(defun ox-chameleon--generate-html-ansi-colours ()
+  (string-join
+   (cl-loop for colour in '(yellow red black green blue cyan white magenta)
+            collect (format "--%s: %s; --bright-%s: %s;"
+                            colour
+                            (ox-chameleon--face-attr
+                             (intern (format "ansi-color-%s" colour))
+                             :foreground)
+                            colour
+                            (ox-chameleon--face-attr
+                             (intern (format "ansi-color-bright-%s" colour))
+                             :foreground)))))
 
 (defun ox-chameleon--generate-html-heading-style ()
   (concat
