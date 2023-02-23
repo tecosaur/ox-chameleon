@@ -198,6 +198,7 @@ and the current theme otherwise."
             "body { background: var(--bg); color: var(--fg); font-family: var(--variable-pitch-font);}"
             "pre { font-family: var(--fixed-pitch-font);}"
             (ox-chameleon--generate-html-heading-style)
+            (ox-chameleon--generate-html-toc-heading-style)
             (ox-chameleon--generate-html-code-style)
             (ox-chameleon--face-to-css 'link "a")
             (ox-chameleon--face-to-css 'link-visited "a:visited")
@@ -226,6 +227,14 @@ and the current theme otherwise."
                             (ox-chameleon--face-attr
                              (intern (format "ansi-color-bright-%s" colour))
                              :foreground)))))
+
+(defun ox-chameleon--generate-html-toc-heading-style ()
+  (string-join
+   (cl-loop for i from 0 to 5
+            for selector = "nav " then (format "%sli > ul > " selector)
+            collect (ox-chameleon--face-to-css
+                     (intern (format "outline-%s" (+ i 1)))
+                     (concat selector "li > a")))))
 
 (defun ox-chameleon--generate-html-heading-style ()
   (string-join
