@@ -228,13 +228,11 @@ and the current theme otherwise."
                              :foreground)))))
 
 (defun ox-chameleon--generate-html-heading-style ()
-  (concat
-   (ox-chameleon--face-to-css 'outline-1 "h1")
-   (string-join
-    (cl-loop for i from 2 to 5
-             collect (ox-chameleon--face-to-css
-                      (intern (format "outline-%s" (- i 1)))
-                      (format "h%s" (- i 1)))))))
+  (string-join
+   (cl-loop for i from 1 to 5
+            collect (ox-chameleon--face-to-css
+                     (intern (format "outline-%s" i))
+                     (format "h%s" i)))))
 
 (defun ox-chameleon--generate-html-rainbow-parens ()
   (when (require 'rainbow-delimiters nil t)
