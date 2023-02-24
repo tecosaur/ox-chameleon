@@ -200,6 +200,8 @@ and the current theme otherwise."
             (ox-chameleon--generate-html-heading-style)
             (ox-chameleon--generate-html-toc-heading-style)
             (ox-chameleon--generate-html-code-style)
+            (when (require 'org-superstar nil t)
+              (ox-chameleon--generate-html-heading-bullets))
             (ox-chameleon--face-to-css 'link "a")
             (ox-chameleon--face-to-css 'link-visited "a:visited")
             (ox-chameleon--face-to-css 'highlight "a:hover")
@@ -232,9 +234,20 @@ and the current theme otherwise."
   (string-join
    (cl-loop for i from 0 to 5
             for selector = "nav " then (format "%sli > ul > " selector)
-            collect (ox-chameleon--face-to-css
-                     (intern (format "outline-%s" (+ i 1)))
-                     (concat selector "li > a")))))
+            append
+            (list
+             (when (require 'org-superstar nil t)
+               (format
+                "%sli > a:before { content: '%s '; vertical-align: 5%%; %s}"
+                selector
+                (with-temp-buffer
+                  (insert-char (org-superstar--hbullet 1))
+                  (buffer-string))
+                (ox-chameleon--face-to-css
+                 (intern (format "outline-%s" (+ i 1))))))
+             (ox-chameleon--face-to-css
+              (intern (format "outline-%s" (+ i 1)))
+              (concat selector "li > a"))))))
 
 (defun ox-chameleon--generate-html-heading-style ()
   (string-join
@@ -242,6 +255,19 @@ and the current theme otherwise."
             collect (ox-chameleon--face-to-css
                      (intern (format "outline-%s" i))
                      (format "h%s" i)))))
+
+(defun ox-chameleon--generate-html-heading-bullets ()
+  (string-join
+   (cl-loop for i from 1 to 5
+            collect
+            (format
+             "h%s:before { content: '%s '; vertical-align: 5%%; %s}"
+             i
+             (with-temp-buffer
+               (insert-char (org-superstar--hbullet 1))
+               (buffer-string))
+             (ox-chameleon--face-to-css
+              (intern (format "outline-%s" i)))))))
 
 (defun ox-chameleon--generate-html-rainbow-parens ()
   (when (require 'rainbow-delimiters nil t)
