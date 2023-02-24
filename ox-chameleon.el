@@ -287,30 +287,47 @@ and the current theme otherwise."
    (ox-chameleon--generate-html-rainbow-parens)
    (ox-chameleon--generate-html-block-names)))
 
+(defun ox-chameleon--src-lang-to-css (lang &optional name)
+  (if-let ((symbols (with-temp-buffer
+                      (org-mode)
+                      prettify-symbols-alist)))
+      (let ((begin (alist-get "#+begin_src" symbols nil nil #'string=))
+            (end (alist-get "#+end_src" symbols nil nil #'string=)))
+        (format
+         "pre.src-%s::before { content: '%s %s'; display: block; %s }
+          pre.src-%s::after  { content: '%s'; display: block; %s }"
+         (or name lang)
+         begin
+         lang
+         (ox-chameleon--face-to-css 'org-block-begin-line)
+         (or name lang)
+         end
+         (ox-chameleon--face-to-css 'org-block-end-line)))
+    (format
+     "pre.src-%s::before { content: '%s'; display: block; %s }"
+     lang
+     (replace-regexp-in-string "-" " " (capitalize (or name lang)))
+     (ox-chameleon--face-to-css 'org-block-begin-line))))
+
 (defun ox-chameleon--generate-html-block-names ()
+  (let ((loaded org-babel-load-languages))
+  (setq loaded
+        (cl-loop for lang in org-src-lang-modes
+                 when (alist-get (cdr lang) loaded)
+                 do (setf (alist-get (cdr lang) loaded)
+                          (list (car lang)
+                                (symbol-name (cdr lang))))
+                 finally return loaded))
+
   (string-join
-   (mapcar (lambda (lang)
-             (if-let ((symbols (with-temp-buffer
-                                 (org-mode)
-                                 prettify-symbols-alist)))
-                 (let ((begin (alist-get "#+begin_src" symbols nil nil #'string=))
-                       (end (alist-get "#+end_src" symbols nil nil #'string=)))
-                   (format
-                    "pre.src-%s::before { content: '%s %s'; display: block; %s }
-                     pre.src-%s::after  { content: '%s'; display: block; %s }"
-                    (symbol-name (car lang))
-                    begin
-                    (symbol-name (car lang))
-                    (ox-chameleon--face-to-css 'org-block-begin-line)
-                    (symbol-name (car lang))
-                    end
-                    (ox-chameleon--face-to-css 'org-block-end-line)))
-               (format
-                "pre.src-%s::before { content: '%s'; display: block; %s }"
-                (symbol-name (car lang))
-                (replace-regexp-in-string "-" " " (capitalize (symbol-name (car lang))))
-                (ox-chameleon--face-to-css 'org-block-begin-line))))
-           org-babel-load-languages)))
+   (cl-loop for lang in loaded
+            append
+            (if (listp (cdr lang))
+                (mapcar (lambda (lang-name)
+                          (ox-chameleon--src-lang-to-css (car lang) lang-name))
+                        (cdr lang))
+              (list (ox-chameleon--src-lang-to-css (car lang))))))))
+
 
 (defun ox-chameleon--generate-html-code-style-font-lock ()
   (string-join
