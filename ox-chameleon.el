@@ -30,20 +30,28 @@
 (defvar org-beamer-theme)
 (defvar engrave-faces-current-preset-style)
 
-(defvar ox-chameleon-snap-fgbg-to-bw nil
-  "When non-nil, snap bg/fg colours to black/white when they're close.")
+(defgroup ox-chameleon ()
+  "Themed Org HTML and LaTeX exports."
+  :group 'org
+  :prefix "ox-chameleon-")
 
-(defvar ox-chameleon-engrave-theme nil
+(defcustom ox-chameleon-snap-fgbg-to-bw nil
+  "When non-nil, snap bg/fg colours to black/white when they're close."
+  :type 'boolean)
+
+(defcustom ox-chameleon-engrave-theme nil
   "An engrave-faces preset to use when generating stylings.
 When set to nil, the current theme will be used.
-This can be overriden via #+chameleon_theme.")
+This can be overriden via #+chameleon_theme."
+  :type 'any)
 
 (defconst ox-chameleon--theme-keyword
   "CHAMELEON_THEME"
   "Keyword used to set the engrave theme used for the export.")
 
 (defvar ox-chameleon--p nil
-  "Used to indicate whether the current export is trying to blend in. Set just before being accessed.")
+  "Used to indicate whether the current export is trying to blend in.
+Set just before being accessed.")
 
 (defun ox-chameleon--install (orig-fun info)
   (setq ox-chameleon--p
