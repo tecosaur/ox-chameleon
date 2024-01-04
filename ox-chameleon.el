@@ -84,10 +84,12 @@ Set just before being accessed.")
               (plist-put info :latex-engraved-theme chameleon-theme))
             t)
            ((and (org-export-derived-backend-p backend 'html)
-                 (equal (plist-get info :html-content-class) "chameleon"))
+                 (string-match-p "chameleon" (plist-get info :html-content-class)))
             (plist-put info :html-content-class
-                       (concat "chameleon "
-                               (symbol-name (car custom-enabled-themes))))
+                       (concat
+                        (plist-get info :html-content-class)
+                        " "
+                        (symbol-name (car custom-enabled-themes))))
             (unless (plist-get info :html-engraved-theme)
               (plist-put info :html-engraved-theme chameleon-theme))
             t))))
@@ -209,7 +211,10 @@ and the current theme otherwise."
             "body { background: var(--bg); color: var(--fg); font-family: var(--variable-pitch-font);}"
             "pre { font-family: var(--fixed-pitch-font);}"
             (ox-chameleon--generate-html-heading-style)
+            (ox-chameleon--generate-html-toc-heading-style)
             (ox-chameleon--generate-html-code-style)
+            (when (require 'org-superstar nil t)
+              (ox-chameleon--generate-html-heading-bullets))
             (ox-chameleon--face-to-css 'link "a")
             (ox-chameleon--face-to-css 'link-visited "a:visited")
             (ox-chameleon--face-to-css 'highlight "a:hover")
@@ -219,18 +224,63 @@ and the current theme otherwise."
   (concat
    ":root {"
    (apply #'format "--bg: #%s;\n--fg: #%s;\n" (ox-chameleon--generate-fgbg-colours))
-   (format "--variable-pitch-font: '%s';\n--fixed-pitch-font: '%s';\n}"
+   (ox-chameleon--generate-html-ansi-colours)
+   (format "--variable-pitch-font: '%s';\n--fixed-pitch-font: '%s';"
            (ox-chameleon--face-attr 'variable-pitch :family)
-           (ox-chameleon--face-attr 'default :family))))
+           (ox-chameleon--face-attr 'default :family))
+   "}"))
+
+(defun ox-chameleon--generate-html-ansi-colours ()
+  (string-join
+   (cl-loop for colour in '(yellow red black green blue cyan white magenta)
+            collect (format "--%s: %s; --bright-%s: %s;"
+                            colour
+                            (ox-chameleon--face-attr
+                             (intern (format "ansi-color-%s" colour))
+                             :foreground)
+                            colour
+                            (ox-chameleon--face-attr
+                             (intern (format "ansi-color-bright-%s" colour))
+                             :foreground)))))
+
+(defun ox-chameleon--generate-html-toc-heading-style ()
+  (string-join
+   (cl-loop for i from 0 to 5
+            for selector = "nav " then (format "%sli > ul > " selector)
+            append
+            (list
+             (when (require 'org-superstar nil t)
+               (format
+                "%sli > a:before { content: '%s '; vertical-align: 5%%; %s}"
+                selector
+                (with-temp-buffer
+                  (insert-char (org-superstar--hbullet 1))
+                  (buffer-string))
+                (ox-chameleon--face-to-css
+                 (intern (format "outline-%s" (+ i 1))))))
+             (ox-chameleon--face-to-css
+              (intern (format "outline-%s" (+ i 1)))
+              (concat selector "li > a"))))))
 
 (defun ox-chameleon--generate-html-heading-style ()
-  (concat
-   (ox-chameleon--face-to-css 'outline-1 "h1")
-   (string-join
-    (cl-loop for i from 2 to 5
-             collect (ox-chameleon--face-to-css
-                      (intern (format "outline-%s" (- i 1)))
-                      (format "h%s" (- i 1)))))))
+  (string-join
+   (cl-loop for i from 1 to 5
+            collect (ox-chameleon--face-to-css
+                     (intern (format "outline-%s" i))
+                     (format "h%s" i)))))
+
+(defun ox-chameleon--generate-html-heading-bullets ()
+  (string-join
+   (cl-loop for i from 1 to 5
+            collect
+            (format
+             "h%s:before { content: '%s '; vertical-align: 5%%; %s}"
+             i
+             (with-temp-buffer
+               (insert-char (org-superstar--hbullet 1))
+               (buffer-string))
+             (ox-chameleon--face-to-css
+              (intern (format "outline-%s" i)))))))
 
 (defun ox-chameleon--generate-html-rainbow-parens ()
   (when (require 'rainbow-delimiters nil t)
@@ -250,30 +300,47 @@ and the current theme otherwise."
    (ox-chameleon--generate-html-rainbow-parens)
    (ox-chameleon--generate-html-block-names)))
 
+(defun ox-chameleon--src-lang-to-css (lang &optional name)
+  (if-let ((symbols (with-temp-buffer
+                      (org-mode)
+                      prettify-symbols-alist)))
+      (let ((begin (alist-get "#+begin_src" symbols nil nil #'string=))
+            (end (alist-get "#+end_src" symbols nil nil #'string=)))
+        (format
+         "pre.src-%s::before { content: '%s %s'; display: block; %s }
+          pre.src-%s::after  { content: '%s'; display: block; %s }"
+         (or name lang)
+         begin
+         lang
+         (ox-chameleon--face-to-css 'org-block-begin-line)
+         (or name lang)
+         end
+         (ox-chameleon--face-to-css 'org-block-end-line)))
+    (format
+     "pre.src-%s::before { content: '%s'; display: block; %s }"
+     lang
+     (replace-regexp-in-string "-" " " (capitalize (or name lang)))
+     (ox-chameleon--face-to-css 'org-block-begin-line))))
+
 (defun ox-chameleon--generate-html-block-names ()
+  (let ((loaded org-babel-load-languages))
+  (setq loaded
+        (cl-loop for lang in org-src-lang-modes
+                 when (alist-get (cdr lang) loaded)
+                 do (setf (alist-get (cdr lang) loaded)
+                          (list (car lang)
+                                (symbol-name (cdr lang))))
+                 finally return loaded))
+
   (string-join
-   (mapcar (lambda (lang)
-             (if-let ((symbols (with-temp-buffer
-                                 (org-mode)
-                                 prettify-symbols-alist)))
-                 (let ((begin (alist-get "#+begin_src" symbols nil nil #'string=))
-                       (end (alist-get "#+end_src" symbols nil nil #'string=)))
-                   (format
-                    "pre.src-%s::before { content: '%s %s'; display: block; %s }
-                     pre.src-%s::after  { content: '%s'; display: block; %s }"
-                    (symbol-name (car lang))
-                    begin
-                    (symbol-name (car lang))
-                    (ox-chameleon--face-to-css 'org-block-begin-line)
-                    (symbol-name (car lang))
-                    end
-                    (ox-chameleon--face-to-css 'org-block-end-line)))
-               (format
-                "pre.src-%s::before { content: '%s'; display: block; %s }"
-                (symbol-name (car lang))
-                (replace-regexp-in-string "-" " " (capitalize (symbol-name (car lang))))
-                (ox-chameleon--face-to-css 'org-block-begin-line))))
-           org-babel-load-languages)))
+   (cl-loop for lang in loaded
+            append
+            (if (listp (cdr lang))
+                (mapcar (lambda (lang-name)
+                          (ox-chameleon--src-lang-to-css (car lang) lang-name))
+                        (cdr lang))
+              (list (ox-chameleon--src-lang-to-css (car lang))))))))
+
 
 (defun ox-chameleon--generate-html-code-style-font-lock ()
   (string-join
@@ -304,7 +371,7 @@ and the current theme otherwise."
     (concat pre
             (string-join
              (cl-map 'list (lambda (attr)
-                             (let ((val (ox-chameleon--face-attr face (car attr) t)))
+                             (let ((val (ox-chameleon--face-attr face (car attr))))
                                (when (engrave-faces--check-nondefault (car attr) val)
                                  (format "%s: %s;" (cdr attr)
                                          (if (eq :weight (car attr))
