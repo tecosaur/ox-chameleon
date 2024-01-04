@@ -385,7 +385,7 @@ and the current theme otherwise."
                   (ox-chameleon--face-attr 'outline-8 :foreground)))))
 
 (defun ox-chameleon--generate-koma-structural-colourings ()
-  (format
+  (identity
    "
 %% structural elements
 
@@ -414,8 +414,7 @@ and the current theme otherwise."
 \\renewcommand{\\labelenumii}{\\textcolor{itemlabel}{(\\theenumii)}}
 \\renewcommand{\\labelenumiii}{\\textcolor{itemlabel}{\\theenumiii.}}
 \\renewcommand{\\labelenumiv}{\\textcolor{itemlabel}{\\theenumiv.}}
-"
-   (substring (ox-chameleon--face-attr 'org-list-dt :foreground) 1)))
+"))
 
 (defun ox-chameleon--generate-beamer-themed-colourings ()
   (let ((builtin-fg (substring (ox-chameleon--face-attr 'font-lock-builtin-face :foreground) 1))
