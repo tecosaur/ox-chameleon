@@ -25,7 +25,9 @@
 
 (require 'engrave-faces)
 (require 'ox)
+(require 'color)
 
+(defvar org-beamer-theme)
 (defvar engrave-faces-current-preset-style)
 
 (defvar ox-chameleon-snap-fgbg-to-bw nil
@@ -183,7 +185,7 @@ and the current theme otherwise."
           (let ((bg (ox-chameleon--face-attr 'default :background))
                 (fg (ox-chameleon--face-attr 'default :foreground)))
             (if ox-chameleon-snap-fgbg-to-bw
-                (cl-destructuring-bind ((hb sb lb) (hf sf lf))
+                (cl-destructuring-bind ((_hb sb lb) (_hf sf lf))
                     (list (apply #'color-rgb-to-hsl (ox-chameleon--hex-to-srgb bg))
                           (apply #'color-rgb-to-hsl (ox-chameleon--hex-to-srgb fg)))
                   (list (if (and (> lb 0.95) (< (* sb (- 1 lb)) 0.01)) "#ffffff" bg)
@@ -286,6 +288,8 @@ and the current theme otherwise."
              font-lock-negation-char-face
              font-lock-preprocessor-face))))
 
+(declare-function engrave-faces-html--css-weight "engrave-faces-html")
+
 (defun ox-chameleon--face-to-css (face &optional selector)
   (let ((pre (if selector (format "%s {" selector) ""))
         (post (if selector "}" "")))
@@ -332,6 +336,8 @@ and the current theme otherwise."
                   (ox-chameleon--face-attr 'org-list-dt :foreground)
                   (ox-chameleon--face-attr 'org-code :foreground)
                   (ox-chameleon--face-attr 'org-verbatim :foreground)))))
+
+(declare-function doom-blend "doom-themes")
 
 (defun ox-chameleon--generate-latex-src-colourings ()
   (apply #'format
