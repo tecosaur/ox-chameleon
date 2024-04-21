@@ -73,9 +73,10 @@ This can be overriden via #+chameleon_theme.")
               (plist-put info :latex-engraved-theme chameleon-theme))
             t)
            ((and (org-export-derived-backend-p backend 'html)
-                 (equal (plist-get info :html-content-class) "chameleon"))
+                 (member "chameleon" (split-string (plist-get info :html-content-class))))
             (plist-put info :html-content-class
-                       (concat "chameleon "
+                       (concat (plist-get info :html-content-class)
+                               " "
                                (symbol-name (car custom-enabled-themes))))
             (unless (plist-get info :html-engraved-theme)
               (plist-put info :html-engraved-theme chameleon-theme))
