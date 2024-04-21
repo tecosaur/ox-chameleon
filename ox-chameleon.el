@@ -194,17 +194,17 @@ and the current theme otherwise."
   (let ((engrave-faces-current-preset-style (ox-chameleon--get-theme info)))
     (require 'engrave-faces-html)
     (concat "<style>"
-            (ox-chameleon--generate-html-root-style)
+            (ox-chameleon--generate-html-root-style info)
             "body { background: var(--bg); color: var(--fg); font-family: var(--variable-pitch-font);}"
             "pre { font-family: var(--fixed-pitch-font);}"
-            (ox-chameleon--generate-html-heading-style)
-            (ox-chameleon--generate-html-code-style)
+            (ox-chameleon--generate-html-heading-style info)
+            (ox-chameleon--generate-html-code-style info)
             (ox-chameleon--face-to-css 'link "a")
             (ox-chameleon--face-to-css 'link-visited "a:visited")
             (ox-chameleon--face-to-css 'highlight "a:hover")
             "</style>")))
 
-(defun ox-chameleon--generate-html-root-style ()
+(defun ox-chameleon--generate-html-root-style (_info)
   (concat
    ":root {"
    (apply #'format "--bg: #%s;\n--fg: #%s;\n" (ox-chameleon--generate-fgbg-colours))
@@ -212,14 +212,14 @@ and the current theme otherwise."
            (ox-chameleon--face-attr 'variable-pitch :family)
            (ox-chameleon--face-attr 'default :family))))
 
-(defun ox-chameleon--generate-html-heading-style ()
+(defun ox-chameleon--generate-html-heading-style (_info)
   (string-join
    (cl-loop for i from 1 to 5
             collect (ox-chameleon--face-to-css
                      (intern (format "outline-%s" i))
                      (format "h%s" i)))))
 
-(defun ox-chameleon--generate-html-rainbow-parens ()
+(defun ox-chameleon--generate-html-rainbow-parens (_info)
   (when (require 'rainbow-delimiters nil t)
     (string-join
      (cl-loop for i from 1 to 9
@@ -227,42 +227,47 @@ and the current theme otherwise."
                        (intern (format "rainbow-delimiters-depth-%s-face" i))
                        (format ".org-rainbow-delimiters-depth-%s" i))))))
 
-(defun ox-chameleon--generate-html-code-style ()
+(defun ox-chameleon--generate-html-code-style (info)
   (concat
    (ox-chameleon--face-to-css 'org-block ".org-src-container")
    (ox-chameleon--face-to-css 'highlight-quoted-symbol ".org-highlight-quoted-symbol")
    (ox-chameleon--face-to-css 'highlight-quoted-quote ".org-highlight-quoted-quote")
    (ox-chameleon--face-to-css 'highlight-numbers-number ".org-highlight-numbers-number")
-   (ox-chameleon--generate-html-code-style-font-lock)
-   (ox-chameleon--generate-html-rainbow-parens)
-   (ox-chameleon--generate-html-block-names)))
+   (ox-chameleon--generate-html-code-style-font-lock info)
+   (ox-chameleon--generate-html-rainbow-parens info)
+   (ox-chameleon--generate-html-block-names info)))
 
-(defun ox-chameleon--generate-html-block-names ()
-  (string-join
-   (mapcar (lambda (lang)
-             (if-let ((symbols (with-temp-buffer
-                                 (org-mode)
-                                 prettify-symbols-alist)))
-                 (let ((begin (alist-get "#+begin_src" symbols nil nil #'string=))
-                       (end (alist-get "#+end_src" symbols nil nil #'string=)))
-                   (format
-                    "pre.src-%s::before { content: '%s %s'; display: block; %s }
-                     pre.src-%s::after  { content: '%s'; display: block; %s }"
-                    (symbol-name (car lang))
-                    begin
-                    (symbol-name (car lang))
-                    (ox-chameleon--face-to-css 'org-block-begin-line)
-                    (symbol-name (car lang))
-                    end
-                    (ox-chameleon--face-to-css 'org-block-end-line)))
-               (format
-                "pre.src-%s::before { content: '%s'; display: block; %s }"
-                (symbol-name (car lang))
-                (replace-regexp-in-string "-" " " (capitalize (symbol-name (car lang))))
-                (ox-chameleon--face-to-css 'org-block-begin-line))))
-           org-babel-load-languages)))
+(defun ox-chameleon--generate-html-block-names (info)
+  (let ((symbols (with-temp-buffer (org-mode) prettify-symbols-alist))
+        (languages
+         (delete-dups
+          (org-element-map
+              (plist-get info :parse-tree)
+              'src-block
+            (lambda (src)
+              (org-element-property :language src))
+            info))))
+    (mapconcat
+     (lambda (lang)
+       (if symbols
+           (let ((begin (alist-get "#+begin_src" symbols nil nil #'string=))
+                 (end (alist-get "#+end_src" symbols nil nil #'string=)))
+             (format
+              "pre.src-%s::before { content: '%s %s'; display: block; %s }
+pre.src-%s::after  { content: '%s'; display: block; %s }"
+              lang begin lang
+              (ox-chameleon--face-to-css 'org-block-begin-line)
+              lang end
+              (ox-chameleon--face-to-css 'org-block-end-line)))
+         (format
+          "pre.src-%s::before { content: '%s'; display: block; %s }"
+          lang
+          (replace-regexp-in-string "-" " " (capitalize lang))
+          (ox-chameleon--face-to-css 'org-block-begin-line))))
+     languages
+     "\n")))
 
-(defun ox-chameleon--generate-html-code-style-font-lock ()
+(defun ox-chameleon--generate-html-code-style-font-lock (_info)
   (string-join
    (mapcar (lambda (face)
              (ox-chameleon--face-to-css
